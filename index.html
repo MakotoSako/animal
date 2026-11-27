@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>どうぶつ占い - 全60分類キャラクター診断</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Zen Maru Gothic for warm Japanese pop aesthetic -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background-color: #FFFBF2;
+      background-image: radial-gradient(#F3E8D2 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+      color: #4A3F35;
+    }
+
+    /* カードのふわっとした出現アニメーション */
+    @keyframes popIn {
+      0% {
+        opacity: 0;
+        transform: translateY(16px) scale(0.97);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .animate-pop-in {
+      animation: popIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* キャラクターのゆらゆらアニメーション */
+    @keyframes floatChar {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(1.5deg); }
+    }
+    .animate-float {
+      animation: floatChar 3.5s ease-in-out infinite;
+    }
+
+    /* トースト通知アニメーション */
+    @keyframes toastSlide {
+      0% { opacity: 0; transform: translateY(16px); }
+      15% { opacity: 1; transform: translateY(0); }
+      85% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-8px); }
+    }
+    .animate-toast {
+      animation: toastSlide 2.6s ease-in-out forwards;
+    }
+
+    /* カスタムスクロールバー */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #FFF7E8;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #E2D2B5;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #CBB692;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-200 selection:text-amber-900">
+
+  <!-- ヘッダー -->
+  <header class="bg-white/90 backdrop-blur-md border-b border-amber-100 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 cursor-pointer" onclick="switchTab('fortune')">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-md shadow-amber-200">
+          <!-- ミニ肉球SVGアイコン -->
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="6.5" cy="9.5" r="2.2"/>
+            <circle cx="10.2" cy="6.2" r="2.2"/>
+            <circle cx="14.8" cy="6.2" r="2.2"/>
+            <circle cx="18.2" cy="9.8" r="2.2"/>
+            <path d="M12.2 11.5c-2.8 0-5.2 2-5.7 4.5-.3 1.5.8 2.8 2.3 2.8 1.2 0 2.2-.5 3.4-.5s2.2.5 3.4.5c1.5 0 2.6-1.3 2.3-2.8-.5-2.5-2.9-4.5-5.7-4.5z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black tracking-tight text-amber-950">
+            どうぶつ占い <span class="text-sm font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200 ml-1">60分類</span>
+          </h1>
+          <p class="text-xs text-amber-700/80 hidden sm:block">四柱推命ベース・オリジナルキャラクター診断</p>
+        </div>
+      </div>
+
+      <!-- ナビゲーションタブ -->
+      <nav class="flex bg-amber-100/70 p-1 rounded-2xl w-full sm:w-auto justify-around sm:justify-start gap-1">
+        <button id="tab-btn-fortune" onclick="switchTab('fortune')" class="tab-btn flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition-all bg-white text-amber-900 shadow-sm">
+          🔮 個人診断
+        </button>
+        <button id="tab-btn-compat" onclick="switchTab('compat')" class="tab-btn flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition-all text-amber-800/70 hover:text-amber-950">
+          💕 相性診断
+        </button>
+        <button id="tab-btn-encyclopedia" onclick="switchTab('encyclopedia')" class="tab-btn flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition-all text-amber-800/70 hover:text-amber-950">
+          📖 全60分類図鑑
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6 sm:py-8">
+
+    <!-- ==========================================
+         TAB 1: 生年月日で占う（個人診断）
+    =========================================== -->
+    <section id="view-fortune" class="space-y-6">
+      <!-- 入力フォームカード -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-amber-100">
+        <div class="text-center max-w-xl mx-auto mb-6">
+          <span class="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold mb-2">生年月日から本質を読み解く</span>
+          <h2 class="text-xl sm:text-2xl font-black text-amber-950">あなたの「どうぶつキャラクター」は？</h2>
+          <p class="text-sm text-amber-800/80 mt-1">生年月日を選択して、12種類の動物×10色の全60分類からあなたの本質を診断します。</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-2xl mx-auto">
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-center">
+            <select id="birth-year" aria-label="誕生年" class="bg-amber-50/70 border-2 border-amber-200 rounded-2xl px-3.5 py-3 text-base font-bold text-amber-950 focus:outline-none focus:border-orange-400 transition-colors cursor-pointer"></select>
+            <span class="font-bold text-amber-800">年</span>
+            <select id="birth-month" aria-label="誕生月" class="bg-amber-50/70 border-2 border-amber-200 rounded-2xl px-3.5 py-3 text-base font-bold text-amber-950 focus:outline-none focus:border-orange-400 transition-colors cursor-pointer"></select>
+            <span class="font-bold text-amber-800">月</span>
+            <select id="birth-day" aria-label="誕生日" class="bg-amber-50/70 border-2 border-amber-200 rounded-2xl px-3.5 py-3 text-base font-bold text-amber-950 focus:outline-none focus:border-orange-400 transition-colors cursor-pointer"></select>
+            <span class="font-bold text-amber-800">日</span>
+          </div>
+
+          <button onclick="runSingleFortune()" class="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-base shadow-lg shadow-orange-200 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2">
+            <span>占う！</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+          </button>
+        </div>
+
+        <!-- バリデーションメッセージ表示用 -->
+        <p id="single-error-msg" class="hidden mt-3 text-center text-xs sm:text-sm font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl py-2 px-4 max-w-md mx-auto">
+          ⚠️ 年・月・日をすべて選択してから「占う！」を押してください。
+        </p>
+      </div>
+
+      <!-- 診断結果表示エリア -->
+      <div id="single-result-container">
+        <div class="bg-white/70 rounded-3xl p-8 sm:p-10 border-2 border-dashed border-amber-200 text-center space-y-3">
+          <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100/80 text-amber-600 flex items-center justify-center text-2xl">
+            🐾
+          </div>
+          <h3 class="text-base sm:text-lg font-black text-amber-950">生年月日を選んで占ってみましょう！</h3>
+          <p class="text-xs sm:text-sm text-amber-800/75 max-w-md mx-auto leading-relaxed">
+            上のフォームから「年・月・日」を選択して「占う！」ボタンを押すと、メインの本質キャラに加えて<strong>隠れキャラ（表面・意思・希望）</strong>、<strong>今日のラッキーカラー</strong>、<strong>SNSシェア画像</strong>まで一括診断されます。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SUB VIEW A: 仕事運詳細ページ
+    =========================================== -->
+    <section id="view-work" class="hidden space-y-6"></section>
+
+    <!-- ==========================================
+         SUB VIEW B: 恋愛運詳細ページ
+    =========================================== -->
+    <section id="view-love" class="hidden space-y-6"></section>
+
+    <!-- ==========================================
+         TAB 2: 相性診断
+    =========================================== -->
+    <section id="view-compat" class="hidden space-y-6">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-amber-100">
+        <div class="text-center max-w-xl mx-auto mb-6">
+          <span class="inline-block px-3 py-1 rounded-full bg-pink-100 text-pink-700 text-xs font-bold mb-2">グループ＆動物ダイナミクス分析</span>
+          <h2 class="text-xl sm:text-2xl font-black text-amber-950">ふたりの相性診断</h2>
+          <p class="text-sm text-amber-800/80 mt-1">あなたとお相手の生年月日を入力すると、2人のキャラクターの関係性や相性度を診断します。</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+          <!-- あなた -->
+          <div class="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/80">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-black flex items-center justify-center">A</span>
+              <span class="font-bold text-amber-950 text-sm">あなたの生年月日</span>
+            </div>
+            <div class="flex items-center gap-1.5 justify-center">
+              <select id="compat-year-a" class="bg-white border border-amber-200 rounded-xl px-2.5 py-2 text-sm font-bold text-amber-950 w-full"></select>
+              <span class="text-xs font-bold">年</span>
+              <select id="compat-month-a" class="bg-white border border-amber-200 rounded-xl px-2.5 py-2 text-sm font-bold text-amber-950 w-full"></select>
+              <span class="text-xs font-bold">月</span>
+              <select id="compat-day-a" class="bg-white border border-amber-200 rounded-xl px-2.5 py-2 text-sm font-bold text-amber-950 w-full"></select>
+              <span class="text-xs font-bold">日</span>
+            </div>
+          </div>
+
+          <!-- お相手 -->
+          <div class="bg-pink-50/60 rounded-2xl p-4 border border-pink-200/80">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="w-6 h-6 rounded-full bg-pink-500 text-white text-xs font-black flex items-center justify-center">B</span>
+              <span class="font-bold text-amber-950 text-sm">お相手の生年月日</span>
+            </div>
+            <div class="flex items-center gap-1.5 justify-center">
+              <select id="compat-year-b" class="bg-white border border-pink-200 rounded-xl px-2.5 py-2 text-sm font-bold text-amber-950 w-full"></select>
+              <span class="text-xs font-bold">年</span>
+              <select id="compat-month-b" class="bg-white border border-pink-200 rounded-xl px-2.5 py-2 text-sm font-bold text-amber-950 w-full"></select>
+              <span class="text-xs font-bold">月</span>
+              <select id="compat-day-b" class="bg-white border border-pink-200 rounded-xl px-2.5 py-2 text-sm font-bold text-amber-950 w-full"></select>
+              <span class="text-xs font-bold">日</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 text-center">
+          <button onclick="runCompatibility()" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black text-base shadow-lg shadow-pink-200 active:scale-95 transition-all cursor-pointer inline-flex items-center gap-2">
+            <span>💕 ふたりの相性を診断する</span>
+          </button>
+          <p id="compat-error-msg" class="hidden mt-3 text-center text-xs sm:text-sm font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl py-2 px-4 max-w-md mx-auto">
+            ⚠️ あなたとお相手、両方の生年月日（年・月・日）を選択してください。
+          </p>
+        </div>
+      </div>
+
+      <!-- 相性結果表示エリア -->
+      <div id="compat-result-container">
+        <div class="bg-white/70 rounded-3xl p-8 sm:p-10 border-2 border-dashed border-pink-200 text-center space-y-3">
+          <div class="w-14 h-14 mx-auto rounded-2xl bg-pink-100/80 text-pink-500 flex items-center justify-center text-2xl">
+            💕
+          </div>
+          <h3 class="text-base sm:text-lg font-black text-amber-950">2人の生年月日を入力して相性チェック！</h3>
+          <p class="text-xs sm:text-sm text-amber-800/75 max-w-md mx-auto leading-relaxed">
+            あなたとお相手の生年月日をそれぞれ選択すると、2人の動物キャラクターと相性シンクロ度が表示されます。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 3: 全60分類図鑑
+    =========================================== -->
+    <section id="view-encyclopedia" class="hidden space-y-6">
+      <div class="bg-white rounded-3xl p-6 shadow-sm border border-amber-100">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black text-amber-950">全60分類キャラクター図鑑</h2>
+            <p class="text-xs sm:text-sm text-amber-800/80 mt-0.5">カードをタップすると、そのキャラクターの詳しい性格や特徴が見られます。</p>
+          </div>
+          <!-- グループフィルター -->
+          <div class="flex flex-wrap gap-1.5" id="group-filters">
+            <button onclick="filterEncyclopedia('ALL', 'ALL')" data-group="ALL" class="group-filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-800 text-white shadow-sm cursor-pointer">すべて (60)</button>
+            <button onclick="filterEncyclopedia('地球グループ', currentAnimalFilter)" data-group="地球グループ" class="group-filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer">🌍 地球グループ</button>
+            <button onclick="filterEncyclopedia('太陽グループ', currentAnimalFilter)" data-group="太陽グループ" class="group-filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-orange-50 text-orange-800 border border-orange-200 hover:bg-orange-100 cursor-pointer">☀️ 太陽グループ</button>
+            <button onclick="filterEncyclopedia('満月グループ', currentAnimalFilter)" data-group="満月グループ" class="group-filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 hover:bg-indigo-100 cursor-pointer">🌕 満月グループ</button>
+          </div>
+        </div>
+
+        <!-- 12動物フィルター -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-4" id="animal-filters"></div>
+
+        <!-- カードグリッド -->
+        <div id="encyclopedia-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- キャラクター詳細モーダル（図鑑クリック時） -->
+  <div id="detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-amber-950/50 backdrop-blur-sm" onclick="closeModal(event)">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl border border-amber-100 relative animate-pop-in" onclick="event.stopPropagation()">
+      <button onclick="closeModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 flex items-center justify-center font-bold transition-colors cursor-pointer" aria-label="閉じる">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- フッター -->
+  <footer class="mt-12 py-6 text-center text-xs text-amber-800/60 border-t border-amber-200/50">
+    <p>どうぶつ占い 60分類キャラクター診断 — 四柱推命（六十干支）ロジック搭載</p>
+  </footer>
+
+  <!-- トースト通知用コンテナ -->
+  <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none"></div>
+
+  <script>
+    // 現在診断中のユーザー状態を保持（仕事運・恋愛運・相性診断・シェア画像生成へ引き継ぐ）
+    let currentDiagnosedState = null;
+
+    /**
+     * ============================================================================
+     * 1. カラー定義＆デザインテーマ
+     * ============================================================================
+     */
+    const COLOR_THEMES = {
+      'レッド':   { hex: '#EF4444', light: '#FEF2F2', border: '#FECACA', text: '#991B1B', badge: 'bg-red-100 text-red-800 border-red-200', desc: '情熱的・行動力・直感型のエネルギー' },
+      'ブルー':   { hex: '#3B82F6', light: '#EFF6FF', border: '#BFDBFE', text: '#1E40AF', badge: 'bg-blue-100 text-blue-800 border-blue-200', desc: '冷静・知性的・マイペースな探求心' },
+      'イエロー': { hex: '#EAB308', light: '#FEFCE8', border: '#FEF08A', text: '#854D0E', badge: 'bg-yellow-100 text-yellow-800 border-yellow-200', desc: '無邪気・社交的・周囲を照らす明るさ' },
+      'グリーン': { hex: '#10B981', light: '#ECFDF5', border: '#A7F3D0', text: '#065F46', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200', desc: '平和主義・自然体・堅実なバランス感覚' },
+      'オレンジ': { hex: '#F97316', light: '#FFF7ED', border: '#FED7AA', text: '#9A3412', badge: 'bg-orange-100 text-orange-800 border-orange-200', desc: '親しみやすさ・柔軟性・人情味あふれる温かさ' },
+      'パープル': { hex: '#8B5CF6', light: '#F5F3FF', border: '#DDD6FE', text: '#5B21B6', badge: 'bg-purple-100 text-purple-800 border-purple-200', desc: '神秘的・独自の美学・鋭い感受性' },
+      'ブラウン': { hex: '#A16207', light: '#FEF9C3', border: '#FDE047', text: '#713F12', badge: 'bg-amber-100 text-amber-900 border-amber-300', desc: '誠実・大地の安定感・頼りがいのある包容力' },
+      'シルバー': { hex: '#64748B', light: '#F8FAFC', border: '#CBD5E1', text: '#334155', badge: 'bg-slate-200 text-slate-800 border-slate-300', desc: '洗練・ストイック・高い美意識と集中力' },
+      'ゴールド': { hex: '#D97706', light: '#FFFBEB', border: '#FDE68A', text: '#92400E', badge: 'bg-amber-200/80 text-amber-950 border-amber-400', desc: '華やか・プライド・王者の風格とバイタリティ' },
+      'ブラック': { hex: '#334155', light: '#F1F5F9', border: '#94A3B8', text: '#0F172A', badge: 'bg-zinc-800 text-white border-zinc-700', desc: '信念・ミステリアス・芯の強さと職人魂' }
+    };
+
+    /**
+     * ============================================================================
+     * 2. オリジナル・カスタムSVGキャラクターイラスト（全12動物）
+     *    カラーテーマのアクセント色(accentColor)をリボンや背景オーラに反映！
+     * ============================================================================
+     */
+    function getAnimalSVG(animal, accentColor = '#F97316', sizeClass = 'w-32 h-32') {
+      const baseShapes = {
+        // 1. 狼 (Wolf) - クールな立ち耳と額の模様
+        '狼': `
+          <polygon points="32,42 24,14 48,30" fill="#64748B" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+          <polygon points="88,42 96,14 72,30" fill="#64748B" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+          <polygon points="34,38 28,20 44,31" fill="#CBD5E1"/>
+          <polygon points="86,38 92,20 76,31" fill="#CBD5E1"/>
+          <ellipse cx="60" cy="64" rx="34" ry="30" fill="#64748B" stroke="#334155" stroke-width="2.5"/>
+          <path d="M28,66 Q42,60 60,72 Q78,60 92,66 Q90,94 60,94 Q30,94 28,66 Z" fill="#F1F5F9"/>
+          <path d="M52,42 L60,54 L68,42" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="46" cy="58" r="4" fill="#1E293B"/>
+          <circle cx="74" cy="58" r="4" fill="#1E293B"/>
+          <circle cx="47.5" cy="56.5" r="1.3" fill="#FFF"/>
+          <circle cx="75.5" cy="56.5" r="1.3" fill="#FFF"/>
+          <ellipse cx="60" cy="69" rx="5" ry="3.5" fill="#1E293B"/>
+          <path d="M53,77 Q60,82 67,77" fill="none" stroke="#334155" stroke-width="2.2" stroke-linecap="round"/>
+        `,
+        // 2. 猿 (Monkey) - 大きな丸耳と愛嬌のあるお顔
+        '猿': `
+          <circle cx="24" cy="60" r="12" fill="#D97706" stroke="#78350F" stroke-width="2.5"/>
+          <circle cx="24" cy="60" r="7" fill="#FDE68A"/>
+          <circle cx="96" cy="60" r="12" fill="#D97706" stroke="#78350F" stroke-width="2.5"/>
+          <circle cx="96" cy="60" r="7" fill="#FDE68A"/>
+          <ellipse cx="60" cy="62" rx="33" ry="30" fill="#B45309" stroke="#78350F" stroke-width="2.5"/>
+          <path d="M36,54 C36,42 54,42 60,50 C66,42 84,42 84,54 C88,64 86,88 60,88 C34,88 32,64 36,54 Z" fill="#FEF3C7"/>
+          <path d="M56,32 Q60,22 66,28" fill="none" stroke="#78350F" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="47" cy="57" r="4" fill="#451A03"/>
+          <circle cx="73" cy="57" r="4" fill="#451A03"/>
+          <circle cx="48.5" cy="55.5" r="1.3" fill="#FFF"/>
+          <circle cx="74.5" cy="55.5" r="1.3" fill="#FFF"/>
+          <circle cx="39" cy="66" r="4.5" fill="#FCA5A5" opacity="0.7"/>
+          <circle cx="81" cy="66" r="4.5" fill="#FCA5A5" opacity="0.7"/>
+          <ellipse cx="60" cy="66" rx="3.5" ry="2.2" fill="#78350F"/>
+          <path d="M50,74 Q60,83 70,74" fill="none" stroke="#78350F" stroke-width="2.5" stroke-linecap="round"/>
+        `,
+        // 3. 虎 (Tiger) - 元気な縞模様と凛々しい眉
+        '虎': `
+          <circle cx="32" cy="36" r="11" fill="#F59E0B" stroke="#78350F" stroke-width="2.5"/>
+          <circle cx="32" cy="36" r="5.5" fill="#FEF3C7"/>
+          <circle cx="88" cy="36" r="11" fill="#F59E0B" stroke="#78350F" stroke-width="2.5"/>
+          <circle cx="88" cy="36" r="5.5" fill="#FEF3C7"/>
+          <ellipse cx="60" cy="64" rx="35" ry="30" fill="#F59E0B" stroke="#78350F" stroke-width="2.5"/>
+          <ellipse cx="60" cy="73" rx="18" ry="13" fill="#FFFBEB"/>
+          <!-- 縞模様 -->
+          <path d="M52,36 L68,36 M55,42 L65,42 M60,34 L60,46" stroke="#78350F" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M26,58 L35,60 M27,66 L36,66" stroke="#78350F" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M94,58 L85,60 M93,66 L84,66" stroke="#78350F" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="46" cy="58" r="4.2" fill="#451A03"/>
+          <circle cx="74" cy="58" r="4.2" fill="#451A03"/>
+          <circle cx="47.5" cy="56.5" r="1.4" fill="#FFF"/>
+          <circle cx="75.5" cy="56.5" r="1.4" fill="#FFF"/>
+          <polygon points="56,67 64,67 60,72" fill="#F43F5E"/>
+          <path d="M52,75 Q56,79 60,74 Q64,79 68,75" fill="none" stroke="#78350F" stroke-width="2.3" stroke-linecap="round"/>
+        `,
+        // 4. 子守熊 / コアラ (Koala) - ふわふわ大耳と大きな黒いお鼻
+        '子守熊': `
+          <circle cx="24" cy="50" r="16" fill="#94A3B8" stroke="#475569" stroke-width="2.5"/>
+          <circle cx="24" cy="50" r="9" fill="#F8FAFC"/>
+          <circle cx="96" cy="50" r="16" fill="#94A3B8" stroke="#475569" stroke-width="2.5"/>
+          <circle cx="96" cy="50" r="9" fill="#F8FAFC"/>
+          <ellipse cx="60" cy="64" rx="32" ry="29" fill="#94A3B8" stroke="#475569" stroke-width="2.5"/>
+          <circle cx="45" cy="58" r="3.8" fill="#1E293B"/>
+          <circle cx="75" cy="58" r="3.8" fill="#1E293B"/>
+          <circle cx="46.2" cy="56.8" r="1.2" fill="#FFF"/>
+          <circle cx="76.2" cy="56.8" r="1.2" fill="#FFF"/>
+          <ellipse cx="60" cy="67" rx="7.5" ry="10" fill="#334155"/>
+          <ellipse cx="58" cy="64" rx="2" ry="3" fill="#94A3B8" opacity="0.6"/>
+          <path d="M54,81 Q60,85 66,81" fill="none" stroke="#334155" stroke-width="2.2" stroke-linecap="round"/>
+        `,
+        // 5. チーター (Cheetah) - スポーティな涙ラインと斑点
+        'チーター': `
+          <circle cx="33" cy="37" r="10" fill="#FBBF24" stroke="#78350F" stroke-width="2.5"/>
+          <circle cx="87" cy="37" r="10" fill="#FBBF24" stroke="#78350F" stroke-width="2.5"/>
+          <ellipse cx="60" cy="64" rx="33" ry="29" fill="#FBBF24" stroke="#78350F" stroke-width="2.5"/>
+          <ellipse cx="60" cy="73" rx="15" ry="12" fill="#FEF9C3"/>
+          <!-- スポット -->
+          <circle cx="46" cy="43" r="2" fill="#78350F"/>
+          <circle cx="60" cy="40" r="2" fill="#78350F"/>
+          <circle cx="74" cy="43" r="2" fill="#78350F"/>
+          <circle cx="36" cy="54" r="2" fill="#78350F"/>
+          <circle cx="84" cy="54" r="2" fill="#78350F"/>
+          <!-- チーター特有の涙線 -->
+          <path d="M46,61 Q44,70 48,76" fill="none" stroke="#78350F" stroke-width="2.3" stroke-linecap="round"/>
+          <path d="M74,61 Q76,70 72,76" fill="none" stroke="#78350F" stroke-width="2.3" stroke-linecap="round"/>
+          <circle cx="47" cy="57" r="4" fill="#451A03"/>
+          <circle cx="73" cy="57" r="4" fill="#451A03"/>
+          <circle cx="48.5" cy="55.5" r="1.3" fill="#FFF"/>
+          <circle cx="74.5" cy="55.5" r="1.3" fill="#FFF"/>
+          <polygon points="56,67 64,67 60,71" fill="#78350F"/>
+          <path d="M54,75 Q60,80 66,75" fill="none" stroke="#78350F" stroke-width="2.2" stroke-linecap="round"/>
+        `,
+        // 6. ライオン (Lion) - 立派なたてがみと百獣の王の風格
+        'ライオン': `
+          <circle cx="60" cy="62" r="42" fill="#D97706" stroke="#78350F" stroke-width="2.5"/>
+          <circle cx="34" cy="38" r="9" fill="#FBBF24" stroke="#78350F" stroke-width="2.2"/>
+          <circle cx="86" cy="38" r="9" fill="#FBBF24" stroke="#78350F" stroke-width="2.2"/>
+          <ellipse cx="60" cy="64" rx="28" ry="25" fill="#FCD34D" stroke="#78350F" stroke-width="2.2"/>
+          <ellipse cx="60" cy="72" rx="14" ry="10" fill="#FFFBEB"/>
+          <circle cx="48" cy="58" r="3.8" fill="#451A03"/>
+          <circle cx="72" cy="58" r="3.8" fill="#451A03"/>
+          <circle cx="49.2" cy="56.8" r="1.2" fill="#FFF"/>
+          <circle cx="73.2" cy="56.8" r="1.2" fill="#FFF"/>
+          <polygon points="56,66 64,66 60,71" fill="#92400E"/>
+          <path d="M53,75 Q56.5,79 60,74 Q63.5,79 67,75" fill="none" stroke="#78350F" stroke-width="2.2" stroke-linecap="round"/>
+        `,
+        // 7. ゾウ (Elephant) - 大きな耳と愛らしい長いお鼻
+        'ゾウ': `
+          <ellipse cx="24" cy="60" rx="16" ry="22" fill="#93C5FD" stroke="#1E40AF" stroke-width="2.5"/>
+          <ellipse cx="96" cy="60" rx="16" ry="22" fill="#93C5FD" stroke="#1E40AF" stroke-width="2.5"/>
+          <ellipse cx="60" cy="60" rx="30" ry="28" fill="#93C5FD" stroke="#1E40AF" stroke-width="2.5"/>
+          <circle cx="47" cy="55" r="3.8" fill="#1E3A8A"/>
+          <circle cx="73" cy="55" r="3.8" fill="#1E3A8A"/>
+          <circle cx="48.2" cy="53.8" r="1.2" fill="#FFF"/>
+          <circle cx="74.2" cy="53.8" r="1.2" fill="#FFF"/>
+          <circle cx="38" cy="64" r="4" fill="#F9A8D4" opacity="0.7"/>
+          <circle cx="82" cy="64" r="4" fill="#F9A8D4" opacity="0.7"/>
+          <!-- ゾウのお鼻 -->
+          <path d="M54,64 L54,84 C54,92 68,92 68,84 C68,80 63,80 63,83 L63,64" fill="#93C5FD" stroke="#1E40AF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        `,
+        // 8. ペガサス (Pegasus) - ファンタジーな翼と一角・たてがみ
+        'ペガサス': `
+          <!-- 小さな羽 -->
+          <path d="M28,62 Q10,44 18,34 Q28,42 32,52" fill="#FFFFFF" stroke="#6366F1" stroke-width="2.2" stroke-linejoin="round"/>
+          <path d="M92,62 Q110,44 102,34 Q92,42 88,52" fill="#FFFFFF" stroke="#6366F1" stroke-width="2.2" stroke-linejoin="round"/>
+          <polygon points="38,40 34,22 48,34" fill="#FFFFFF" stroke="#6366F1" stroke-width="2.2" stroke-linejoin="round"/>
+          <polygon points="82,40 86,22 72,34" fill="#FFFFFF" stroke="#6366F1" stroke-width="2.2" stroke-linejoin="round"/>
+          <ellipse cx="60" cy="64" rx="29" ry="29" fill="#FFFFFF" stroke="#6366F1" stroke-width="2.5"/>
+          <!-- ふわふわ前髪 -->
+          <path d="M46,35 Q60,25 74,35 Q68,45 60,42 Q52,45 46,35 Z" fill="#C7D2FE" stroke="#6366F1" stroke-width="2"/>
+          <ellipse cx="60" cy="74" rx="16" ry="12" fill="#EEF2FF"/>
+          <circle cx="47" cy="57" r="3.8" fill="#312E81"/>
+          <circle cx="73" cy="57" r="3.8" fill="#312E81"/>
+          <circle cx="48.2" cy="55.8" r="1.2" fill="#FFF"/>
+          <circle cx="74.2" cy="55.8" r="1.2" fill="#FFF"/>
+          <circle cx="55" cy="72" r="1.8" fill="#6366F1"/>
+          <circle cx="65" cy="72" r="1.8" fill="#6366F1"/>
+          <path d="M55,78 Q60,82 65,78" fill="none" stroke="#6366F1" stroke-width="2.2" stroke-linecap="round"/>
+        `,
+        // 9. 黒ひょう (Black Panther) - クールな黒猫系シルエットにキラリと光る瞳
+        '黒ひょう': `
+          <polygon points="32,44 26,20 48,34" fill="#334155" stroke="#0F172A" stroke-width="2.5" stroke-linejoin="round"/>
+          <polygon points="88,44 94,20 72,34" fill="#334155" stroke="#0F172A" stroke-width="2.5" stroke-linejoin="round"/>
+          <ellipse cx="60" cy="64" rx="33" ry="29" fill="#334155" stroke="#0F172A" stroke-width="2.5"/>
+          <ellipse cx="60" cy="73" rx="14" ry="10" fill="#475569"/>
+          <circle cx="46" cy="58" r="4.5" fill="#FDE047"/>
+          <circle cx="74" cy="58" r="4.5" fill="#FDE047"/>
+          <ellipse cx="46" cy="58" rx="1.8" ry="3.5" fill="#0F172A"/>
+          <ellipse cx="74" cy="58" rx="1.8" ry="3.5" fill="#0F172A"/>
+          <polygon points="56,67 64,67 60,71" fill="#F472B6"/>
+          <path d="M53,75 Q56.5,79 60,74 Q63.5,79 67,75" fill="none" stroke="#CBD5E1" stroke-width="2.2" stroke-linecap="round"/>
+        `,
+        // 10. ひつじ (Sheep) - モコモコ頭とくるんとした角
+        'ひつじ': `
+          <path d="M32,48 C18,46 18,64 28,64" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round"/>
+          <path d="M88,48 C102,46 102,64 92,64" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round"/>
+          <ellipse cx="60" cy="65" rx="30" ry="27" fill="#FEF3C7" stroke="#92400E" stroke-width="2.5"/>
+          <!-- モコモコ雲ヘッド -->
+          <circle cx="40" cy="40" r="11" fill="#FFFBEB" stroke="#92400E" stroke-width="2.2"/>
+          <circle cx="53" cy="35" r="12" fill="#FFFBEB" stroke="#92400E" stroke-width="2.2"/>
+          <circle cx="67" cy="35" r="12" fill="#FFFBEB" stroke="#92400E" stroke-width="2.2"/>
+          <circle cx="80" cy="40" r="11" fill="#FFFBEB" stroke="#92400E" stroke-width="2.2"/>
+          <circle cx="47" cy="60" r="3.6" fill="#451A03"/>
+          <circle cx="73" cy="60" r="3.6" fill="#451A03"/>
+          <circle cx="48.2" cy="58.8" r="1.2" fill="#FFF"/>
+          <circle cx="74.2" cy="58.8" r="1.2" fill="#FFF"/>
+          <circle cx="38" cy="67" r="4" fill="#FCA5A5" opacity="0.6"/>
+          <circle cx="82" cy="67" r="4" fill="#FCA5A5" opacity="0.6"/>
+          <path d="M56,69 L60,72 L64,69 M60,72 L60,77" fill="none" stroke="#92400E" stroke-width="2.2" stroke-linecap="round"/>
+        `,
+        // 11. こじか (Fawn) - 大きな耳と背中の白い斑点・つぶらな瞳
+        'こじか': `
+          <ellipse cx="26" cy="44" rx="13" ry="7" transform="rotate(-25 26 44)" fill="#FDBA74" stroke="#9A3412" stroke-width="2.5"/>
+          <ellipse cx="94" cy="44" rx="13" ry="7" transform="rotate(25 94 44)" fill="#FDBA74" stroke="#9A3412" stroke-width="2.5"/>
+          <ellipse cx="60" cy="64" rx="30" ry="29" fill="#FB923C" stroke="#9A3412" stroke-width="2.5"/>
+          <ellipse cx="60" cy="73" rx="16" ry="12" fill="#FFEDD5"/>
+          <circle cx="48" cy="42" r="2.2" fill="#FFF"/>
+          <circle cx="60" cy="39" r="2.2" fill="#FFF"/>
+          <circle cx="72" cy="42" r="2.2" fill="#FFF"/>
+          <circle cx="46" cy="58" r="4.5" fill="#431407"/>
+          <circle cx="74" cy="58" r="4.5" fill="#431407"/>
+          <circle cx="47.8" cy="56.2" r="1.6" fill="#FFF"/>
+          <circle cx="75.8" cy="56.2" r="1.6" fill="#FFF"/>
+          <ellipse cx="60" cy="68" rx="4.5" ry="3" fill="#431407"/>
+          <path d="M55,75 Q60,79 65,75" fill="none" stroke="#9A3412" stroke-width="2.2" stroke-linecap="round"/>
+        `,
+        // 12. たぬき (Tanuki) - 愛嬌たっぷりの目の周りの模様とほっこり笑顔
+        'たぬき': `
+          <circle cx="33" cy="38" r="10" fill="#92400E" stroke="#451A03" stroke-width="2.5"/>
+          <circle cx="87" cy="38" r="10" fill="#92400E" stroke="#451A03" stroke-width="2.5"/>
+          <ellipse cx="60" cy="64" rx="35" ry="29" fill="#B45309" stroke="#451A03" stroke-width="2.5"/>
+          <!-- たぬきアイパッチ -->
+          <ellipse cx="46" cy="59" rx="11" ry="9" fill="#451A03"/>
+          <ellipse cx="74" cy="59" rx="11" ry="9" fill="#451A03"/>
+          <ellipse cx="60" cy="73" rx="15" ry="11" fill="#FEF3C7"/>
+          <circle cx="47" cy="58" r="3.5" fill="#FFF"/>
+          <circle cx="73" cy="58" r="3.5" fill="#FFF"/>
+          <circle cx="47.5" cy="58" r="1.8" fill="#1E293B"/>
+          <circle cx="72.5" cy="58" r="1.8" fill="#1E293B"/>
+          <ellipse cx="60" cy="68" rx="4.5" ry="3" fill="#451A03"/>
+          <path d="M54,75 Q60,80 66,75" fill="none" stroke="#451A03" stroke-width="2.2" stroke-linecap="round"/>
+        `
+      };
+
+      const shape = baseShapes[animal] || baseShapes['虎'];
+
+      return `
+        <svg viewBox="0 0 120 120" class="${sizeClass} mx-auto drop-shadow-sm select-none" aria-label="${animal}のイラスト">
+          <!-- カラーテーマの背景オーラ -->
+          <circle cx="60" cy="62" r="52" fill="${accentColor}" opacity="0.14"/>
+          <circle cx="60" cy="62" r="46" fill="none" stroke="${accentColor}" stroke-width="2" stroke-dasharray="4 4" opacity="0.45"/>
+          ${shape}
+          <!-- 首元のカラーリボン -->
+          <g transform="translate(60, 96)">
+            <polygon points="0,0 -13,-6 -13,6" fill="${accentColor}" stroke="#334155" stroke-width="1.8" stroke-linejoin="round"/>
+            <polygon points="0,0 13,-6 13,6" fill="${accentColor}" stroke="#334155" stroke-width="1.8" stroke-linejoin="round"/>
+            <circle cx="0" cy="0" r="4" fill="#FFF" stroke="#334155" stroke-width="1.8"/>
+          </g>
+        </svg>
+      `;
+    }
+
+    /**
+     * ============================================================================
+     * 3. 全60分類マスターデータ（1番〜60番：六十干支完全対応）
+     *    ※ 43番 = 丙午 = 動きまわる虎（レッド）を基準に全60干支を正確に配置
+     * ============================================================================
+     */
+    const ANIMAL_TRAITS = {
+      '狼': {
+        group: '地球グループ',
+        baseDesc: '自分のペースと独自のこだわりを大切にする一匹狼タイプ。人と同じことを嫌い、独創的なアイデアで周囲を驚かせます。',
+        work: '専門職やクリエイティブな分野、自分の裁量で進められる環境で圧倒的な才能を発揮します。',
+        love: 'ベタベタした関係よりも、お互いの時間を尊重し合える自立した大人の恋愛を好みます。',
+        bestMatch: ['猿', '子守熊', 'ペガサス'],
+        workDetail: {
+          stats: { action: 78, teamwork: 52, creativity: 96, leadership: 70, analysis: 90 },
+          topJobs: ['デザイナー・クリエイター・作家', 'ITエンジニア・研究開発職', '独立起業・フリーランス専門職'],
+          environment: '細かいルールで縛られず、自分の裁量とペースで集中できる環境で最大の成果を出します。「あなたに任せる」と言われると燃えるタイプです。',
+          workAction: '自分のこだわりや専門知識を周囲に言語化して共有すると、強力な理解者が現れて評価が急上昇します。'
+        },
+        loveDetail: {
+          style: '最初は少しクールで距離を保ちますが、心を許した相手には一途で深い愛情を注ぎます。精神的な自立と信頼を何より大切にするタイプです。',
+          idealType: '束縛せず自分の時間や趣味を尊重してくれる人、独自の価値観やユーモアを持っている人。',
+          pitfall: '「言わなくても察してほしい」と一人で抱え込みがち。時には素直に甘えたり言葉で気持ちを伝えると絆が深まります。',
+          dateSpot: '隠れ家的なカフェ、美術館やプラネタリウム、夜のドライブなど静かに語り合える空間。'
+        }
+      },
+      '猿': {
+        group: '地球グループ',
+        baseDesc: '好奇心旺盛で器用、ゲーム感覚で物事を楽しむエンターテイナー。細かい観察力と抜群の機転を持っています。',
+        work: '企画・営業・接客など、スピード感と臨機応変な対応が求められる現場で頼りにされます。',
+        love: '友達のような明るく楽しい関係が理想。褒められると一気にテンションが上がる素直な一面も。',
+        bestMatch: ['狼', '虎', '黒ひょう'],
+        workDetail: {
+          stats: { action: 92, teamwork: 88, creativity: 86, leadership: 72, analysis: 82 },
+          topJobs: ['企画マーケティング・広報PR', '営業・コンサルタント・接客業', 'イベントプロデューサー・メディア関係'],
+          environment: '変化や刺激があり、ゲーム感覚で目標をクリアしていける活気ある職場が最適。単調なルーティンよりもマルチタスクで輝きます。',
+          workAction: '得意の観察眼で周囲の小さな変化に気づき、先にフォローを入れることで職場に欠かせないエースになれます。'
+        },
+        loveDetail: {
+          style: '明るくフレンドリーで、会話のテンポや笑いのツボが合う恋愛を楽しみます。好きな人の前ではサービス精神旺盛に盛り上げるムードメーカーです。',
+          idealType: 'リアクションが良くたくさん褒めてくれる人、一緒に新しい体験を楽しめる好奇心旺盛な人。',
+          pitfall: '照れ隠しで冗談ばかり言って本心が伝わりにくいことも。大切な場面では真剣な眼差しで想いを伝えましょう。',
+          dateSpot: '話題のテーマパーク、食べ歩きストリート、体験型ワークショップなどワクワクする場所。'
+        }
+      },
+      '虎': {
+        group: '地球グループ',
+        baseDesc: '正義感が強く面倒見の良い兄貴肌・姉御肌。堂々とした風格の裏に、実はとても情に厚く繊細な優しさを秘めています。',
+        work: '全体のバランスを見渡す力があり、リーダーやマネージャーとして組織をまとめる才能があります。',
+        love: '駆け引きなしのストレートな愛情表現。一度信頼した相手にはとことん尽くす一途さがあります。',
+        bestMatch: ['猿', '子守熊', 'ひつじ'],
+        workDetail: {
+          stats: { action: 90, teamwork: 88, creativity: 80, leadership: 94, analysis: 84 },
+          topJobs: ['マネージャー・統括リーダー・管理職', '店舗責任者・プロジェクトリーダー', '人材育成・教育・スポーツ指導'],
+          environment: '全体の統括やチームをまとめる役割を任される環境で本来の面倒見の良さとリーダーシップが最大限に発揮されます。',
+          workAction: '普段の頼もしさに加えて、周囲へのちょっとした気配りや褒め言葉を添えることで、最強のチームワークが生まれます。'
+        },
+        loveDetail: {
+          style: '好きになったら真っ直ぐに愛情を注ぐ情熱派。普段は頼もしくリードしますが、二人きりになると甘えん坊な一面を見せるギャップが魅力です。',
+          idealType: '裏表がなく誠実な人、自分の頑張りを認めて優しく包み込んでくれる包容力のある人。',
+          pitfall: '相手を思うあまり世話を焼きすぎてしまうことも。相手の自主性を信じて見守る余裕を持つとさらに愛されます。',
+          dateSpot: '美味しいお肉や郷土料理の名店、自然豊かな温泉旅行、スポーツ観戦などエネルギーを感じるデート。'
+        }
+      },
+      '子守熊': {
+        group: '地球グループ',
+        baseDesc: '普段はおっとりマイペースに見えて、実は計算高く現実的な戦略家。美味しいものや楽しいことが大好きなロマンチストでもあります。',
+        work: '長期的な計画を立てて着実に成果を出すのが得意。サービス精神も旺盛で周囲を和ませます。',
+        love: '安心感と居心地の良さを最優先。好きな人には甘え上手になり、温かく穏やかな家庭を築きます。',
+        bestMatch: ['狼', '虎', 'ゾウ'],
+        workDetail: {
+          stats: { action: 72, teamwork: 85, creativity: 80, leadership: 78, analysis: 94 },
+          topJobs: ['財務・経理・経営戦略プランナー', 'ホテル・観光・ブライダル・飲食プロデュース', '公務員・インフラ・不動産コンサル'],
+          environment: '先の見通しが立ち、長期的な視点でじっくりキャリアを築ける安定した環境がベスト。適度な休息とご褒美があるとパフォーマンスが急上昇します。',
+          workAction: '持ち前の先読み力とリスク管理能力を活かし、周囲が気づかない改善案を提案すると高い信頼を得られます。'
+        },
+        loveDetail: {
+          style: 'ロマンチストでありながら現実的な将来もしっかり見据える堅実派。一緒にいてリラックスできる「安心感」と「居心地の良さ」を大切にします。',
+          idealType: '金銭感覚や価値観がしっかりしている人、美味しい食事や旅行の楽しさを分かち合える優しい人。',
+          pitfall: '慎重になりすぎてアプローチのタイミングを逃しがち。時には直感を信じて一歩踏み出してみましょう。',
+          dateSpot: '絶景リゾートホテル、人気のレストラン巡り、おうちでの映画鑑賞＆手料理デート。'
+        }
+      },
+      'チーター': {
+        group: '太陽グループ',
+        baseDesc: '思い立ったら即行動の超スピードスター！ポジティブで切り替えが早く、高い目標に向かって全力疾走するチャレンジャーです。',
+        work: '新規事業の立ち上げや短期決戦のプロジェクトで無類の強さを発揮。自由な環境がベストです。',
+        love: '直感で恋に落ちる情熱派。追いかける恋に燃え、爽やかでテンポの良いお付き合いを好みます。',
+        bestMatch: ['ライオン', 'たぬき', 'こじか'],
+        workDetail: {
+          stats: { action: 98, teamwork: 74, creativity: 88, leadership: 84, analysis: 70 },
+          topJobs: ['新規事業開発・ベンチャー起業家', 'トップセールス・外資系営業', 'スポーツ・エンタメ・トレンド企画'],
+          environment: 'スピード感と成果主義が評価される環境、新しいチャレンジが歓迎される職場で誰よりも早く結果を出します。',
+          workAction: 'スタートダッシュの速さは随一。信頼できるサポート役と組むことで、最後の仕上げまで完璧にやり遂げられます。'
+        },
+        loveDetail: {
+          style: '「この人だ！」と思ったら即アプローチするストレートなハンター気質。駆け引きなしの爽やかで情熱的な恋愛を楽しみます。',
+          idealType: '前向きで自立している人、自分の夢や挑戦を笑顔で応援してくれる爽やかな人。',
+          pitfall: '熱しやすく冷めやすい一面も。マンネリを防ぐために、二人で新しい趣味や目標に挑戦し続けるのが秘訣です。',
+          dateSpot: 'ドライブ、アウトドア・グランピング、話題の新スポット巡りなどアクティブなデート。'
+        }
+      },
+      'ライオン': {
+        group: '太陽グループ',
+        baseDesc: '誇り高く華やかなオーラを放つ百獣の王。責任感が強く完璧主義な一面と、身内にはとことん甘く優しい人情家の一面を持ちます。',
+        work: '人の上に立つリーダーや経営者タイプ。大きなビジョンを掲げ、周囲を巻き込んで成功へ導きます。',
+        love: '相手を全力で守り抜く頼もしさがあります。素直に褒めて立ててくれるパートナーとは最高の関係に。',
+        bestMatch: ['チーター', 'ペガサス', 'こじか'],
+        workDetail: {
+          stats: { action: 92, teamwork: 76, creativity: 84, leadership: 98, analysis: 78 },
+          topJobs: ['経営者・役員・統括リーダー', 'プロデューサー・ディレクター', '弁護士・医師・士業などの専門リーダー'],
+          environment: '大きな裁量権と明確なステージが用意された環境で王者の風格を発揮。周囲から頼られ、期待されるほど底力を出します。',
+          workAction: '周囲への感謝や労いの言葉を積極的に口にすることで、人望がさらに厚くなり最強のチームが生まれます。'
+        },
+        loveDetail: {
+          style: 'ドラマチックで誇り高い恋愛観の持ち主。愛する人を全力で守り、喜ばせようとする頼もしいナイト・クイーン気質です。',
+          idealType: '素直に尊敬や感謝を伝えてくれる人、上品さと温かさを兼ね備えたパートナー。',
+          pitfall: 'プライドが邪魔をして素直に弱音や謝罪を言えないことも。心を開いた相手には弱い部分も見せると絆が深まります。',
+          dateSpot: '夜景の見えるレストラン、劇場・コンサート鑑賞、少し背伸びしたラグジュアリーな空間。'
+        }
+      },
+      'ゾウ': {
+        group: '太陽グループ',
+        baseDesc: '圧倒的なスケールと揺るぎない信念を持つ努力家。普段は温厚で聞き上手ですが、一度決めたことは最後までやり抜く底力があります。',
+        work: 'プロフェッショナルとして一つの道を極める職人肌。大きなプロジェクトほど燃える大器です。',
+        love: '不器用ながらも誠実で深い愛情を注ぎます。信頼関係をじっくり育てていく長続きタイプです。',
+        bestMatch: ['ペガサス', '子守熊', 'たぬき'],
+        workDetail: {
+          stats: { action: 86, teamwork: 82, creativity: 78, leadership: 90, analysis: 88 },
+          topJobs: ['専門技術職・エンジニア・職人', '大規模プロジェクト統括・インフラ開発', '研究職・建築・医療スペシャリスト'],
+          environment: '一つの専門分野を深く追求できる環境や、長期的な大事業に取り組む職場で圧倒的な存在感を放ちます。',
+          workAction: '普段は温厚ですが集中すると周囲が見えなくなることも。こまめな進捗共有を意識すると周囲の協力が得やすくなります。'
+        },
+        loveDetail: {
+          style: '軽々しい恋よりも、一生を共にできるような深く誠実な愛を求める一途なタイプ。言葉よりも行動で愛情を示します。',
+          idealType: '約束を守る誠実な人、自分の仕事や夢への情熱を理解し静かに寄り添ってくれる人。',
+          pitfall: '感情を溜め込んで突然爆発してしまうことも。小さな違和感のうちに穏やかに話し合う習慣をつけましょう。',
+          dateSpot: '歴史ある街並みの散策、水族館や動物園、落ち着いた老舗の食事処。'
+        }
+      },
+      'ペガサス': {
+        group: '太陽グループ',
+        baseDesc: '直感とひらめきで自由に空を駆ける天才肌。束縛を嫌い、枠にとらわれない発想力と華やかな存在感で人を惹きつけます。',
+        work: 'アート、企画、フリーランスなど感性を活かせる仕事が天職。気分が乗った時の集中力は驚異的です。',
+        love: '自分の感覚にフィットするかどうかが全て。自由を尊重してくれる懐の深い相手と長続きします。',
+        bestMatch: ['ライオン', 'ゾウ', '狼'],
+        workDetail: {
+          stats: { action: 88, teamwork: 62, creativity: 99, leadership: 78, analysis: 82 },
+          topJobs: ['クリエイティブディレクター・アーティスト', '起業家・コンサルタント・自由業', '企画開発・トレンドセッター'],
+          environment: '時間や場所に縛られないフレックスな環境、常識にとらわれないアイデアが歓迎される職場で天才的なひらめきを発揮します。',
+          workAction: '直感で浮かんだアイデアをすぐにメモし、実務が得意なパートナーと組むことで次々と形にできます。'
+        },
+        loveDetail: {
+          style: 'フィーリングと直感を大切にする自由な恋愛スタイル。縛られず、風のように軽やかで刺激的な関係を好みます。',
+          idealType: '束縛せず自由を尊重してくれる懐の深い人、感性が豊かで会話が尽きない人。',
+          pitfall: '気分によって連絡の頻度にムラが出やすいところ。相手を安心させる一言を添えるだけで関係が劇的に安定します。',
+          dateSpot: 'アートギャラリー、海辺のカフェ、行き先を決めない気ままなドライブ旅。'
+        }
+      },
+      '黒ひょう': {
+        group: '満月グループ',
+        baseDesc: 'スマートで洗練されたセンスを持つトレンドセッター。プライドが高く情熱的で、困っている人を放っておけない熱いハートの持ち主です。',
+        work: '流行を読む力や企画力に優れ、クリエイティブや広報・プロデュース分野で輝きを放ちます。',
+        love: 'ドラマチックでロマンチックな恋に憧れます。対等な立場で刺激し合えるパートナーが理想です。',
+        bestMatch: ['ひつじ', 'たぬき', '猿'],
+        workDetail: {
+          stats: { action: 86, teamwork: 84, creativity: 92, leadership: 85, analysis: 80 },
+          topJobs: ['ファッション・美容・デザイン業界', '広報PR・ブランドプロデューサー', '企画営業・メディア編集者'],
+          environment: 'センスや美意識が活かせる洗練された職場、新しいトレンドを生み出すクリエイティブな現場で輝きます。',
+          workAction: '持ち前の正義感と面倒見の良さを発揮しつつ、完璧を求めすぎず周囲の意見も取り入れるとさらに飛躍します。'
+        },
+        loveDetail: {
+          style: 'スマートで洗練された大人の恋を演出するロマンチスト。内面はとても情熱的で、好きな人にはとことん一途に尽くします。',
+          idealType: '清潔感とセンスがある人、対等な立場で高め合いながら素直に愛情表現をしてくれる人。',
+          pitfall: '傷つくのを恐れてクールに装ってしまうことも。素直な気持ちを言葉にすることで運命の相手と深く結ばれます。',
+          dateSpot: 'おしゃれなルーフトップカフェ、映画館、季節のイルミネーションや最新スポット。'
+        }
+      },
+      'ひつじ': {
+        group: '満月グループ',
+        baseDesc: '周囲の空気を読む気配り上手な平和主義者。寂しがり屋で人との絆を大切にし、仲間思いでコツコツと信頼を積み重ねます。',
+        work: 'チームワークを大切にする調整役やサポート業務、相談役として組織に欠かせない存在になります。',
+        love: 'いつも一緒にいたい甘えん坊タイプ。誠実で優しい相手と、穏やかで愛情あふれる関係を築きます。',
+        bestMatch: ['黒ひょう', 'こじか', '虎'],
+        workDetail: {
+          stats: { action: 74, teamwork: 96, creativity: 78, leadership: 76, analysis: 92 },
+          topJobs: ['人事・総務・秘書・バックオフィス統括', 'カウンセラー・医療・福祉・教育職', 'カスタマーサクセス・チームコーディネーター'],
+          environment: '人間関係が穏やかで協力し合えるチーム環境がベスト。誰かの役に立っている実感があるほど高いモチベーションを保てます。',
+          workAction: '細やかな気配りと情報収集力はチーム随一。自分の意見も遠慮せず提案することで、さらに頼られる存在になります。'
+        },
+        loveDetail: {
+          style: '人との絆や安心感を何より大切にする愛情深いタイプ。好きな人とはできるだけ多くの時間を共有したい甘えん坊な一面があります。',
+          idealType: '連絡がマメで優しい人、周囲への気配りができて穏やかな家庭を大切にできる人。',
+          pitfall: '相手に合わせすぎて自分の本音を我慢しがち。無理をする前に「こうしたいな」と可愛くリクエストしてみましょう。',
+          dateSpot: 'おうちでのんびり料理、公園ピクニック、温泉やカフェでのまったりデート。'
+        }
+      },
+      'こじか': {
+        group: '満月グループ',
+        baseDesc: '純粋で好奇心旺盛、愛嬌たっぷりの愛されキャラ。人見知りな一面もありますが、心を許した相手には無邪気な笑顔を見せます。',
+        work: '人を育てる仕事やチームで協力する環境が得意。直感力が鋭く、人の気持ちに寄り添うのが上手です。',
+        love: '嘘や裏切りを嫌うピュアな恋愛観。たくさん愛情を言葉で伝えてくれる優しい人に惹かれます。',
+        bestMatch: ['ひつじ', 'チーター', 'ライオン'],
+        workDetail: {
+          stats: { action: 80, teamwork: 92, creativity: 85, leadership: 72, analysis: 84 },
+          topJobs: ['保育・教育・インストラクター', '接客・サービス・コンシェルジュ', 'デザイン・イラスト・企画サポート'],
+          environment: '温かくアットホームな雰囲気で、信頼できる先輩や仲間と一緒に成長できる環境で才能が花開きます。',
+          workAction: '人の気持ちに寄り添う共感力と直感力が武器。得意分野を一つ磨くことで、周囲から愛されるスペシャリストになれます。'
+        },
+        loveDetail: {
+          style: 'ピュアで一途、嘘や駆け引きのない真っ直ぐな恋を求めます。心を許した相手には無邪気な笑顔と深い信頼を寄せる愛されキャラです。',
+          idealType: '嘘をつかない誠実な人、優しくリードして安心感を与えてくれる包容力のある人。',
+          pitfall: '不安になるとネガティブに考えすぎてしまうことも。ストレートに気持ちを聞くことで安心と絆が手に入ります。',
+          dateSpot: '動物と触れ合えるスポット、スイーツ巡り、季節の花が咲く庭園や遊園地。'
+        }
+      },
+      'たぬき': {
+        group: '満月グループ',
+        baseDesc: '愛嬌と社交性に優れた愛され上手の世渡り名人。礼儀正しく伝統やルールを重んじ、自然と周囲から助けられる運の強さがあります。',
+        work: '人脈を活かした営業、接客、マネジメントなど、人と人をつなぐ役割で大きな成果を上げます。',
+        love: '相手に合わせて尽くす優しいタイプ。一緒にいてホッとできる温かい家庭的な恋を好みます。',
+        bestMatch: ['黒ひょう', 'チーター', 'ゾウ'],
+        workDetail: {
+          stats: { action: 82, teamwork: 95, creativity: 76, leadership: 84, analysis: 86 },
+          topJobs: ['法人営業・渉外・広報ネットワーク職', '店舗経営・サービス業マネージャー', '人事・総務・伝統や信頼を重んじる企業'],
+          environment: '礼儀や信頼関係が大切にされる組織、多くの人と関わりながら人脈を広げられる職場で強い引き立て運を発揮します。',
+          workAction: '持ち前の愛嬌と聞き上手な姿勢で、年齢や立場を超えた味方を増やすことが大きな成功への近道です。'
+        },
+        loveDetail: {
+          style: '相手の喜ぶ顔を見るのが大好きな尽くし型。穏やかで家庭的な温かさを大切にし、周囲からも祝福される安定した恋を育みます。',
+          idealType: '礼儀正しく家族や友人を大切にする人、一緒に美味しいものを食べて笑い合える穏やかな人。',
+          pitfall: '優しすぎて何でも引き受けてしまうことも。自分の気持ちも大切にしながら、対等な関係を楽しむとさらに幸せになれます。',
+          dateSpot: '老舗の美味しい和食・洋食店、温泉街の食べ歩き、歴史ある神社仏閣めぐり。'
+        }
+      }
+    };
+
+    // 1〜60番の六十干支・全60分類データ
+    const SIXTY_CLASSIFICATIONS = [
+      { id: 1,  kanshi: '甲子', name: '長距離ランナーのチーター', animal: 'チーター', color: 'ゴールド', tagline: '目標に向かって粘り強く走り続ける情熱のアスリート' },
+      { id: 2,  kanshi: '乙丑', name: '社交家のたぬき', animal: 'たぬき', color: 'グリーン', tagline: '誰とでもすぐに打ち解ける愛嬌たっぷりのムードメーカー' },
+      { id: 3,  kanshi: '丙寅', name: '落ち着きのない猿', animal: '猿', color: 'ゴールド', tagline: '好奇心のアンテナ全開！毎日を全力で楽しむアイデアマン' },
+      { id: 4,  kanshi: '丁卯', name: 'フットワークの軽い子守熊', animal: '子守熊', color: 'レッド', tagline: '思い立ったらすぐ行動！好奇心と計算力を兼ね備えた旅人' },
+      { id: 5,  kanshi: '戊辰', name: '面倒見のいいペガサス', animal: 'ペガサス', color: 'ブラウン', tagline: '自由な感性と温かい包容力で人を惹きつける親分肌' },
+      { id: 6,  kanshi: '己巳', name: '愛情あふれる虎', animal: '虎', color: 'ブルー', tagline: 'クールな知性と深い人情味を併せ持つ頼れるリーダー' },
+      { id: 7,  kanshi: '庚午', name: '全力疾走するチーター', animal: 'チーター', color: 'グリーン', tagline: '圧倒的なスピードと突破力で未来を切り拓くチャレンジャー' },
+      { id: 8,  kanshi: '辛未', name: '磨き上げられたたぬき', animal: 'たぬき', color: 'ゴールド', tagline: '高い美意識と品格を備えた、洗練された愛されキャラ' },
+      { id: 9,  kanshi: '壬申', name: '大きな志をもった猿', animal: '猿', color: 'グリーン', tagline: 'スケール大きな夢を描き、持ち前の器用さで実現する策士' },
+      { id: 10, kanshi: '癸酉', name: '母性豊かな子守熊', animal: '子守熊', color: 'グリーン', tagline: '細やかな気配りと深い優しさで周囲を包み込む癒やし系' },
+      { id: 11, kanshi: '甲戌', name: '波乱に満ちたペガサス', animal: 'ペガサス', color: 'ゴールド', tagline: 'ドラマチックな人生を駆け抜ける、直感鋭きカリスマ' },
+      { id: 12, kanshi: '乙亥', name: '人気者のゾウ', animal: 'ゾウ', color: 'ゴールド', tagline: '穏やかな笑顔の裏に強い信念を秘めた、みんなの中心人物' },
+      { id: 13, kanshi: '丙子', name: 'ネアカの狼', animal: '狼', color: 'ブラウン', tagline: 'マイペースながらも明るく社交的！独自の道を行く人気者' },
+      { id: 14, kanshi: '丁丑', name: '協調性のないひつじ', animal: 'ひつじ', color: 'パープル', tagline: '優しい笑顔の中に揺るがない自分軸を持つ、個性派アーティスト' },
+      { id: 15, kanshi: '戊寅', name: 'どっしりとした猿', animal: '猿', color: 'レッド', tagline: '抜群の行動力と安定感で大きな成果を掴み取る実力派' },
+      { id: 16, kanshi: '己卯', name: 'コアラの中のコアラ', animal: '子守熊', color: 'パープル', tagline: '独自の美学と鋭い直感を持つ、ミステリアスな戦略家' },
+      { id: 17, kanshi: '庚辰', name: '強い意志をもったこじか', animal: 'こじか', color: 'レッド', tagline: '可憐な見た目とは裏腹に、鋼の芯を持つ情熱のチャレンジャー' },
+      { id: 18, kanshi: '辛巳', name: 'デリケートなゾウ', animal: 'ゾウ', color: 'グリーン', tagline: '繊細な感性と完璧主義で、プロフェッショナルを極める職人' },
+      { id: 19, kanshi: '壬午', name: '放浪の狼', animal: '狼', color: 'ブラック', tagline: '自由を愛し、未知の世界へ飛び込む孤高のロマンチスト' },
+      { id: 20, kanshi: '癸未', name: '物静かなひつじ', animal: 'ひつじ', color: 'ゴールド', tagline: '穏やかな物腰の奥に深い知性と強い意志を秘めた参謀タイプ' },
+      { id: 21, kanshi: '甲申', name: '落ち着きのあるペガサス', animal: 'ペガサス', color: 'シルバー', tagline: '鋭いひらめきとクールな分析力を兼ね備えたスマートな天才肌' },
+      { id: 22, kanshi: '乙酉', name: '強靭な翼をもつペガサス', animal: 'ペガサス', color: 'グリーン', tagline: 'どんな逆風も乗り越えて大空へ羽ばたく、タフな自由人' },
+      { id: 23, kanshi: '丙戌', name: '無邪気なひつじ', animal: 'ひつじ', color: 'ブラウン', tagline: '素直で飾らない笑顔が魅力！周囲から自然と愛される純粋派' },
+      { id: 24, kanshi: '丁亥', name: 'クリエイティブな狼', animal: '狼', color: 'オレンジ', tagline: '豊かな発想力と人情味で、新しい価値を生み出すアーティスト' },
+      { id: 25, kanshi: '戊子', name: '穏やかな狼', animal: '狼', color: 'シルバー', tagline: '冷静沈着で誠実。自分の世界を大切にしながら信頼を築く賢者' },
+      { id: 26, kanshi: '己丑', name: '粘り強いひつじ', animal: 'ひつじ', color: 'グリーン', tagline: '一度決めたことは最後までやり抜く、誠実で頼れる努力家' },
+      { id: 27, kanshi: '庚寅', name: '波乱に満ちたたぬき', animal: 'たぬき', color: 'イエロー', tagline: '変化を恐れず突き進むエネルギーを持つ、パワフルな愛されキャラ' },
+      { id: 28, kanshi: '辛卯', name: '優雅なこじか', animal: 'こじか', color: 'ブルー', tagline: '上品な佇まいと鋭い観察眼を持つ、洗練されたピュアハート' },
+      { id: 29, kanshi: '壬辰', name: 'チャレンジ精神の旺盛なひつじ', animal: 'ひつじ', color: 'オレンジ', tagline: '仲間との絆を力に変えて、新しいステージへ挑み続ける冒険家' },
+      { id: 30, kanshi: '癸巳', name: '順応性のある狼', animal: '狼', color: 'ブルー', tagline: 'どんな環境にもスマートに馴染みつつ、自分らしさを貫く知性派' },
+      { id: 31, kanshi: '甲午', name: 'リーダーとなるゾウ', animal: 'ゾウ', color: 'シルバー', tagline: '圧倒的な統率力と誠実さで人々を導く、頼れる大黒柱' },
+      { id: 32, kanshi: '乙未', name: 'しっかり者のこじか', animal: 'こじか', color: 'ゴールド', tagline: '可愛らしさと堅実な現実感覚を併せ持つ、愛され優等生' },
+      { id: 33, kanshi: '丙申', name: '活動的な子守熊', animal: '子守熊', color: 'イエロー', tagline: '明るいエネルギーと行動力でチャンスを掴むポジティブ派' },
+      { id: 34, kanshi: '丁酉', name: '気分屋の猿', animal: '猿', color: 'シルバー', tagline: '鋭い直感と豊かな感受性を持つ、チャーミングなひらめき名人' },
+      { id: 35, kanshi: '戊戌', name: '頼られると嬉しいひつじ', animal: 'ひつじ', color: 'レッド', tagline: '熱い情熱と面倒見の良さで、仲間を全力サポートする兄貴・姉御肌' },
+      { id: 36, kanshi: '己亥', name: '好感のもたれる狼', animal: '狼', color: 'パープル', tagline: '独自のセンスと控えめな優しさで、自然と人を惹きつける魅力人' },
+      { id: 37, kanshi: '庚子', name: 'まっしぐらに突き進むゾウ', animal: 'ゾウ', color: 'イエロー', tagline: '目標を見据えたら脇目も振らず突き進む、パワフルな突破者' },
+      { id: 38, kanshi: '辛丑', name: '華やかなこじか', animal: 'こじか', color: 'シルバー', tagline: '凛とした気品と愛らしい笑顔で周囲を魅了するスター性' },
+      { id: 39, kanshi: '壬寅', name: '夢とロマンの子守熊', animal: '子守熊', color: 'ブラック', tagline: '壮大な理想を胸に秘め、着実に夢を形にしていくロマンチスト' },
+      { id: 40, kanshi: '癸卯', name: '尽す猿', animal: '猿', color: 'ブラック', tagline: '細やかな気遣いと職人気質の器用さで、大切な人を支える名参謀' },
+      { id: 41, kanshi: '甲辰', name: '大器晩成のたぬき', animal: 'たぬき', color: 'ブラウン', tagline: '経験を重ねるごとに輝きを増す、揺るぎない信頼の持ち主' },
+      { id: 42, kanshi: '乙巳', name: '足腰の強いチーター', animal: 'チーター', color: 'ブラウン', tagline: 'スピード感と堅実な粘り強さを兼ね備えた、頼れる実践派' },
+      { id: 43, kanshi: '丙午', name: '動きまわる虎', animal: '虎', color: 'レッド', tagline: '裏表のない正義感と抜群の行動力で周囲を明るく照らす太陽の虎' },
+      { id: 44, kanshi: '丁未', name: '情熱的な黒ひょう', animal: '黒ひょう', color: 'ブラック', tagline: 'クールな外見の奥に燃えるような信念と優しさを秘めた情熱家' },
+      { id: 45, kanshi: '戊申', name: 'サービス精神旺盛な子守熊', animal: '子守熊', color: 'ゴールド', tagline: '人を喜ばせることが大好き！華やかな笑顔と機転で場を盛り上げる達人' },
+      { id: 46, kanshi: '己酉', name: '守りの猿', animal: '猿', color: 'オレンジ', tagline: '堅実な判断力と温かい人情味で、大切な人や組織を守り抜く堅実派' },
+      { id: 47, kanshi: '庚戌', name: '人間味あふれる黒ひょう', animal: '黒ひょう', color: 'ブラウン', tagline: '義理人情に厚く、スマートさと温かさを兼ね備えた頼れるリーダー' },
+      { id: 48, kanshi: '辛亥', name: '品格のあるチーター', animal: 'チーター', color: 'シルバー', tagline: '洗練されたセンスと潔い決断力でスマートに成功を掴むクール派' },
+      { id: 49, kanshi: '壬子', name: 'ゆったりとした悠然の虎', animal: '虎', color: 'グリーン', tagline: '大海のような広い心と堂々たる風格で、周囲に安心感を与える大物' },
+      { id: 50, kanshi: '癸丑', name: '落ち込みの激しい黒ひょう', animal: '黒ひょう', color: 'オレンジ', tagline: '繊細な感受性と優しい心を持ち、人の痛みに寄り添える芸術家肌' },
+      { id: 51, kanshi: '甲寅', name: 'わが道を行くライオン', animal: 'ライオン', color: 'レッド', tagline: '圧倒的なエネルギーと信念で自分の王国を築く生粋のリーダー' },
+      { id: 52, kanshi: '乙卯', name: '統率力のあるライオン', animal: 'ライオン', color: 'パープル', tagline: '気品あるカリスマ性と的確な判断力で人々を導く王者の風格' },
+      { id: 53, kanshi: '丙辰', name: '感情豊かな黒ひょう', animal: '黒ひょう', color: 'グリーン', tagline: '喜怒哀楽がストレートで魅力的！周囲を惹きつける華やかな表現者' },
+      { id: 54, kanshi: '丁巳', name: '楽天的な虎', animal: '虎', color: 'ゴールド', tagline: '細かいことは気にしない大らかさと、華やかな行動力を持つムードメーカー' },
+      { id: 55, kanshi: '戊午', name: 'パワフルな虎', animal: '虎', color: 'イエロー', tagline: '明るくエネルギッシュ！周囲を元気にする圧倒的バイタリティの持ち主' },
+      { id: 56, kanshi: '己未', name: '気どらない黒ひょう', animal: '黒ひょう', color: 'イエロー', tagline: 'おしゃれでスマートなのに親しみやすい、自然体の人気者' },
+      { id: 57, kanshi: '庚申', name: '感情的なライオン', animal: 'ライオン', color: 'イエロー', tagline: '裏表のない真っ直ぐな情熱と、無邪気な明るさを持つ太陽の王者' },
+      { id: 58, kanshi: '辛酉', name: '傷つきやすいライオン', animal: 'ライオン', color: 'グリーン', tagline: '堂々たる風格の裏に、繊細で優しい心と高い美意識を秘めた完璧主義者' },
+      { id: 59, kanshi: '壬戌', name: '束縛を嫌う黒ひょう', animal: '黒ひょう', color: 'ブルー', tagline: '知性と自由な精神を愛し、クールに時代を先取りするイノベーター' },
+      { id: 60, kanshi: '癸亥', name: '慈悲深い虎', animal: '虎', color: 'パープル', tagline: '深い洞察力と包容力で人々を癒やし導く、優しき賢者の虎' }
+    ];
+
+    /**
+     * ============================================================================
+     * 4. 正確な六十干支（1〜60）算出ロジック＆隠れキャラ4柱算出
+     *    基準日検証：1961年6月30日 -> 43（丙午：動きまわる虎 / レッド）
+     * ============================================================================
+     */
+    function calculateKanshiNumber(year, month, day) {
+      const targetUTC = Date.UTC(year, month - 1, day);
+      const anchorUTC = Date.UTC(1961, 5, 30); // 1961年6月30日
+      const anchorNumber = 43; // 丙午
+
+      const msPerDay = 24 * 60 * 60 * 1000;
+      const diffDays = Math.round((targetUTC - anchorUTC) / msPerDay);
+
+      return ((anchorNumber - 1 + diffDays) % 60 + 60) % 60 + 1;
+    }
+
+    // 年柱の干支番号（1〜60）を算出（立春基準の簡易四柱推命：1984年=甲子(1)）
+    function calculateYearKanshi(year, month, day) {
+      let adjYear = year;
+      if (month === 1 || (month === 2 && day < 4)) {
+        adjYear -= 1;
+      }
+      return (((adjYear - 1984) % 60) + 60) % 60 + 1;
+    }
+
+    // 月柱の干支番号（1〜60）を算出（五虎遁元法ベース）
+    function calculateMonthKanshi(year, month, day) {
+      const yearNum = calculateYearKanshi(year, month, day);
+      const yearStem = (yearNum - 1) % 10; // 0:甲 .. 9:癸
+      // 節入り日近似（毎月6日前後で月が切り替わる）
+      const solarMonthIndex = day >= 6 ? month : (month === 1 ? 12 : month - 1);
+      // 寅月(2月)を1番目とする月インデックス (0..11)
+      const mIdx = (solarMonthIndex + 10) % 12;
+      // 甲己年は丙寅(3)始まり、乙庚は戊寅(15)、丙辛は庚寅(27)、丁壬は壬寅(39)、戊癸は甲寅(51)
+      const startStemMap = [2, 4, 6, 8, 0]; // 0始まり十干
+      const monthStem = (startStemMap[yearStem % 5] + mIdx) % 10;
+      const monthBranch = (2 + mIdx) % 12; // 寅=2
+      // 十干(monthStem)と十二支(monthBranch)から1〜60の干支番号を復元
+      for (let n = 1; n <= 60; n++) {
+        if ((n - 1) % 10 === monthStem && (n - 1) % 12 === monthBranch) {
+          return n;
+        }
+      }
+      return 1;
+    }
+
+    function getCharacterById(id) {
+      const item = SIXTY_CLASSIFICATIONS[id - 1];
+      const animalInfo = ANIMAL_TRAITS[item.animal];
+      const colorTheme = COLOR_THEMES[item.color];
+      return {
+        ...item,
+        group: animalInfo.group,
+        baseDesc: animalInfo.baseDesc,
+        work: animalInfo.work,
+        love: animalInfo.love,
+        bestMatch: animalInfo.bestMatch,
+        colorTheme
+      };
+    }
+
+    function getFortuneData(year, month, day) {
+      const dayId = calculateKanshiNumber(year, month, day);
+      const monthId = calculateMonthKanshi(year, month, day);
+      const yearId = calculateYearKanshi(year, month, day);
+      // 希望キャラ：日柱・月柱・年柱の調和から導く第4の柱
+      const hopeId = (((dayId + monthId + yearId - 3) % 60) + 60) % 60 + 1;
+
+      const main = getCharacterById(dayId);
+      const surface = getCharacterById(monthId);
+      const will = getCharacterById(yearId);
+      const hope = getCharacterById(hopeId);
+
+      return {
+        ...main,
+        pillars: {
+          essence: main,    // 本質（日柱）
+          surface: surface, // 表面（月柱）
+          will: will,       // 意思（年柱）
+          hope: hope        // 希望（調和柱）
+        }
+      };
+    }
+
+    /**
+     * ============================================================================
+     * 4.5 デイリー運勢（今日のラッキーカラー＆開運アドバイス）計算
+     * ============================================================================
+     */
+    function getDailyFortune(characterData) {
+      const now = new Date();
+      const ty = now.getFullYear();
+      const tm = now.getMonth() + 1;
+      const td = now.getDate();
+
+      const todayKanshi = calculateKanshiNumber(ty, tm, td);
+      // ユーザー番号と今日の干支番号から決定論的シードを生成
+      const seed = (characterData.id * 31 + todayKanshi * 17 + td * 7) % 100;
+
+      const stars = seed >= 80 ? 5 : seed >= 55 ? 4 : seed >= 25 ? 3 : 4;
+      const colorNames = Object.keys(COLOR_THEMES);
+      const luckyColorName = colorNames[(characterData.id + todayKanshi) % colorNames.length];
+      const luckyColorTheme = COLOR_THEMES[luckyColorName];
+
+      const luckyItems = [
+        'お気に入りのマグカップ', '手書きのメモ帳', '柑橘系の香りアイテム',
+        'シルバーのアクセサリー', '季節のフルーツ', '観葉植物・小さな花',
+        'ミントタブレット', '革製の小物・キーケース', '少し厚手のハンカチ',
+        '温かいハーブティー', 'お気に入りのプレイリスト', '丸いフォルムの雑貨'
+      ];
+      const luckyActions = [
+        'いつもより5分早く起きて深呼吸する',
+        '気になっていた人に短い挨拶メッセージを送る',
+        'デスクやバッグの中を1箇所だけ整理する',
+        '普段選ばないメニューや飲み物を試してみる',
+        '今日あった「良かったこと」を3つ思い浮かべる',
+        '背筋を伸ばしていつもより大股で歩いてみる',
+        '15分だけスマホを置いて温かい飲み物を味わう',
+        'お世話になっている人に「ありがとう」を言葉で伝える'
+      ];
+      const dailyMessages = [
+        `今日のあなたは${characterData.animal}ならではの直感が冴えわたっています！迷ったら「ワクワクする方」を選ぶと運気が大きく開けます。`,
+        `${characterData.group}の良さが輝く一日。周囲のペースに振り回されず、自分のリズムを大切にすることで嬉しいチャンスが舞い込みます。`,
+        `小さな親切や気配りが巡り巡って大きな幸運に変わる日。${luckyColorName}のアイテムを身につけると自信と魅力がさらにアップ！`,
+        `新しいアイデアやひらめきが降りてきやすいタイミングです。思いついたことはすぐにメモに残しておくと、近いうちに形になります。`,
+        `これまでの努力が周囲に認められやすい好調日！遠慮せずに自分の意見や得意分野をアピールすると頼もしい味方が現れます。`
+      ];
+
+      return {
+        dateStr: `${ty}年${tm}月${td}日`,
+        stars,
+        luckyColorName,
+        luckyColorTheme,
+        luckyItem: luckyItems[(characterData.id + td) % luckyItems.length],
+        luckyAction: luckyActions[(todayKanshi + characterData.id) % luckyActions.length],
+        message: dailyMessages[(seed + characterData.id) % dailyMessages.length]
+      };
+    }
+
+    /**
+     * ============================================================================
+     * 5. UI初期化＆日付セレクトボックス管理
+     * ============================================================================
+     */
+    function populateDateSelectors(yearId, monthId, dayId) {
+      const yearSel = document.getElementById(yearId);
+      const monthSel = document.getElementById(monthId);
+      const daySel = document.getElementById(dayId);
+
+      const currentYear = new Date().getFullYear();
+      yearSel.innerHTML = '<option value="">----</option>';
+      for (let y = currentYear; y >= 1920; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        yearSel.appendChild(opt);
+      }
+
+      monthSel.innerHTML = '<option value="">--</option>';
+      for (let m = 1; m <= 12; m++) {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        monthSel.appendChild(opt);
+      }
+
+      function updateDays() {
+        const y = parseInt(yearSel.value, 10);
+        const m = parseInt(monthSel.value, 10);
+        const prevDay = parseInt(daySel.value, 10);
+        const maxDays = (y && m) ? new Date(y, m, 0).getDate() : 31;
+        daySel.innerHTML = '<option value="">--</option>';
+        for (let d = 1; d <= maxDays; d++) {
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = d;
+          if (prevDay && d === Math.min(prevDay, maxDays)) opt.selected = true;
+          daySel.appendChild(opt);
+        }
+      }
+
+      yearSel.addEventListener('change', updateDays);
+      monthSel.addEventListener('change', updateDays);
+      updateDays();
+    }
+
+    /**
+     * ============================================================================
+     * 6. 個人診断レンダリング（4キャラ隠れ診断・今日の運勢・SNSシェア・次ページ導線）
+     * ============================================================================
+     */
+    function getGroupBadgeStyle(group) {
+      if (group === '地球グループ') return { bg: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: '🌍', desc: '現実的・しっかり者・自分のペースを大切にする' };
+      if (group === '太陽グループ') return { bg: 'bg-orange-100 text-orange-800 border-orange-200', icon: '☀️', desc: '華やか・ポジティブ・直感とパワーで輝く' };
+      return { bg: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: '🌕', desc: '気配り上手・人情派・周囲との調和を重んじる' };
+    }
+
+    function renderCharacterCardHTML(data, dateLabel = '', includeExtras = false) {
+      const groupStyle = getGroupBadgeStyle(data.group);
+      const svgHTML = getAnimalSVG(data.animal, data.colorTheme.hex, 'w-36 h-36 sm:w-44 sm:h-44');
+
+      // 隠れキャラ4面診断HTML
+      const fourPillarsHTML = (includeExtras && data.pillars) ? `
+        <div class="mt-8 pt-6 border-t border-amber-100">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
+            <div>
+              <span class="inline-block px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[11px] font-black mb-1">四柱推命・4つの顔</span>
+              <h4 class="text-base sm:text-lg font-black text-amber-950">🎭 隠れキャラ診断（本質・表面・意思・希望）</h4>
+            </div>
+            <p class="text-xs text-amber-800/75">場面によって切り替わる4つの動物たち</p>
+          </div>
+
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            ${[
+              { key: 'essence', label: '本質キャラ', sub: '普段の素の自分', badge: 'bg-amber-500 text-white' },
+              { key: 'surface', label: '表面キャラ', sub: '初対面・仕事での顔', badge: 'bg-sky-500 text-white' },
+              { key: 'will',    label: '意思キャラ', sub: '決断・ピンチ時の顔', badge: 'bg-emerald-600 text-white' },
+              { key: 'hope',    label: '希望キャラ', sub: '憧れ・目指す理想像', badge: 'bg-purple-500 text-white' }
+            ].map(p => {
+              const charObj = data.pillars[p.key];
+              return `
+                <div class="rounded-2xl p-3.5 border text-center flex flex-col justify-between transition-transform hover:-translate-y-0.5" style="background-color: ${charObj.colorTheme.light}; border-color: ${charObj.colorTheme.border};">
+                  <div>
+                    <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-black ${p.badge} mb-1">${p.label}</span>
+                    <div class="text-[11px] font-bold text-amber-900/70 mb-1">${p.sub}</div>
+                    ${getAnimalSVG(charObj.animal, charObj.colorTheme.hex, 'w-20 h-20')}
+                    <div class="font-black text-amber-950 text-xs sm:text-sm mt-1 leading-snug">${charObj.name}</div>
+                  </div>
+                  <div class="mt-2 pt-1.5 border-t border-black/5 flex items-center justify-center gap-1">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${charObj.colorTheme.badge}">${charObj.color}</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      ` : '';
+
+      // 今日のラッキーカラー＆デイリー運勢HTML
+      let dailyHTML = '';
+      if (includeExtras) {
+        const daily = getDailyFortune(data);
+        const starsStr = '★'.repeat(daily.stars) + '☆'.repeat(5 - daily.stars);
+        dailyHTML = `
+          <div class="mt-6 rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-amber-50 via-orange-50/70 to-yellow-50 border-2 border-amber-200/80">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">🌟</span>
+                <h4 class="font-black text-amber-950 text-base sm:text-lg">今日の運勢＆ラッキーカラー</h4>
+              </div>
+              <span class="text-xs font-bold px-3 py-1 rounded-full bg-white text-amber-900 border border-amber-200">${daily.dateStr} の運気</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 mb-3.5">
+              <div class="bg-white/90 rounded-2xl p-3.5 border border-amber-100 flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl flex-shrink-0 shadow-inner border border-black/10 flex items-center justify-center text-white font-black text-xs" style="background-color: ${daily.luckyColorTheme.hex};">
+                  LUCKY
+                </div>
+                <div>
+                  <div class="text-[11px] font-bold text-amber-700">今日のラッキーカラー</div>
+                  <div class="font-black text-amber-950 text-sm">${daily.luckyColorName}</div>
+                  <div class="text-[11px] text-amber-800/75">総合運：<span class="text-amber-500 font-black">${starsStr}</span></div>
+                </div>
+              </div>
+
+              <div class="bg-white/90 rounded-2xl p-3.5 border border-amber-100">
+                <div class="text-[11px] font-bold text-amber-700 mb-0.5">🎁 ラッキーアイテム</div>
+                <div class="font-black text-amber-950 text-sm">${daily.luckyItem}</div>
+              </div>
+
+              <div class="bg-white/90 rounded-2xl p-3.5 border border-amber-100">
+                <div class="text-[11px] font-bold text-amber-700 mb-0.5">✨ 今日の開運アクション</div>
+                <div class="font-bold text-amber-950 text-xs sm:text-sm leading-snug">${daily.luckyAction}</div>
+              </div>
+            </div>
+
+            <div class="bg-white/80 rounded-2xl p-3.5 border border-amber-100 text-xs sm:text-sm text-amber-950 leading-relaxed">
+              <span class="font-black text-orange-600">💌 今日のワンポイント：</span>${daily.message}
+            </div>
+          </div>
+        `;
+      }
+
+      // SNSシェア画像＆テキスト生成セクションHTML
+      const shareSectionHTML = includeExtras ? `
+        <div class="mt-6 rounded-3xl p-5 sm:p-6 bg-slate-50 border-2 border-slate-200/80">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <div>
+              <h4 class="font-black text-slate-900 text-base sm:text-lg flex items-center gap-1.5">
+                <span>📸</span> 診断結果カード画像を生成・SNSでシェア
+              </h4>
+              <p class="text-xs text-slate-600">あなたのキャラクター・隠れキャラ・今日のラッキーカラーを1枚の画像にまとめました！</p>
+            </div>
+          </div>
+
+          <div class="flex flex-col md:flex-row items-center gap-5">
+            <div class="w-full md:w-7/12 bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
+              <canvas id="share-card-canvas" width="800" height="450" class="w-full h-auto rounded-xl block"></canvas>
+            </div>
+
+            <div class="w-full md:w-5/12 flex flex-col gap-2.5">
+              <button onclick="downloadShareImage()" class="w-full py-3 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm shadow-sm active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2">
+                <span>📥 結果画像を保存する (PNG)</span>
+              </button>
+              <button onclick="copyShareText()" class="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 border-2 border-slate-300 font-black text-sm active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2">
+                <span>📋 シェア用テキストをコピー</span>
+              </button>
+              <button onclick="shareToX()" class="w-full py-3 px-4 rounded-2xl bg-zinc-900 hover:bg-black text-white font-black text-sm shadow-sm active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2">
+                <span>𝕏 で診断結果をポストする</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ` : '';
+
+      // 次ページ誘導ナビゲーションボタン（仕事運・恋愛運・相性占い）
+      const nextPagesCTA = includeExtras ? `
+        <div class="mt-8 pt-6 border-t-2 border-dashed border-amber-200">
+          <p class="text-center text-xs sm:text-sm font-black text-amber-900 mb-3.5">
+            👇 さらに詳しく占う！テーマ別の詳細鑑定ページへ進む
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button onclick="openDetailPage('work')" class="group py-4 px-5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-black text-sm sm:text-base shadow-md shadow-sky-200 active:scale-95 transition-all cursor-pointer flex items-center justify-between">
+              <span class="flex items-center gap-2"><span>💼</span> <span>仕事運を見る</span></span>
+              <span class="transform group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+
+            <button onclick="openDetailPage('love')" class="group py-4 px-5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black text-sm sm:text-base shadow-md shadow-pink-200 active:scale-95 transition-all cursor-pointer flex items-center justify-between">
+              <span class="flex items-center gap-2"><span>💖</span> <span>恋愛運を見る</span></span>
+              <span class="transform group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+
+            <button onclick="goToCompatibilityWithUser()" class="group py-4 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-sm sm:text-base shadow-md shadow-orange-200 active:scale-95 transition-all cursor-pointer flex items-center justify-between">
+              <span class="flex items-center gap-2"><span>💕</span> <span>相性占いへ</span></span>
+              <span class="transform group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+          </div>
+        </div>
+      ` : '';
+
+      return `
+        <div class="bg-white rounded-3xl shadow-md border-2 overflow-hidden animate-pop-in" style="border-color: ${data.colorTheme.border};">
+          <!-- トップバナー -->
+          <div class="px-6 py-4 flex flex-wrap items-center justify-between gap-2 border-b" style="background-color: ${data.colorTheme.light}; border-color: ${data.colorTheme.border};">
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1 rounded-full text-xs font-black bg-white shadow-xs border" style="color: ${data.colorTheme.text}; border-color: ${data.colorTheme.border};">
+                No.${data.id}（${data.kanshi}）
+              </span>
+              <span class="px-3 py-1 rounded-full text-xs font-bold border ${groupStyle.bg}">
+                ${groupStyle.icon} ${data.group}
+              </span>
+            </div>
+            ${dateLabel ? `<span class="text-xs font-bold text-amber-900/70">${dateLabel} 生まれ</span>` : ''}
+          </div>
+
+          <!-- メインビジュアル＆タイトル -->
+          <div class="p-6 sm:p-8">
+            <div class="flex flex-col md:flex-row items-center gap-6 sm:gap-8">
+              <!-- 自作キャラクターイラスト -->
+              <div class="relative flex-shrink-0">
+                <div class="animate-float">
+                  ${svgHTML}
+                </div>
+                <div class="mt-2 text-center">
+                  <span class="inline-block px-3.5 py-1 rounded-full text-xs font-black border shadow-xs ${data.colorTheme.badge}">
+                    カラー：${data.color}
+                  </span>
+                </div>
+              </div>
+
+              <!-- タイトル＆キャッチコピー -->
+              <div class="flex-1 text-center md:text-left space-y-3">
+                <div class="inline-block px-3 py-0.5 rounded-lg text-xs font-bold bg-amber-100/80 text-amber-900">
+                  基本動物（本質キャラ）：${data.animal}
+                </div>
+                <h3 class="text-2xl sm:text-3xl font-black tracking-tight text-amber-950">
+                  ${data.name}
+                </h3>
+                <p class="text-base sm:text-lg font-bold leading-relaxed" style="color: ${data.colorTheme.text};">
+                  「${data.tagline}」
+                </p>
+                <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-100 text-xs sm:text-sm text-amber-900/90 leading-relaxed">
+                  <span class="font-black text-amber-950">🎨 ${data.color}の個性：</span>${data.colorTheme.desc}。<br>
+                  <span class="font-black text-amber-950">${groupStyle.icon} ${data.group}：</span>${groupStyle.desc}タイプです。
+                </div>
+              </div>
+            </div>
+
+            <!-- 詳細分析グリッド -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+              <div class="bg-amber-50/50 rounded-2xl p-4 border border-amber-100">
+                <h4 class="font-black text-amber-950 text-sm mb-2 flex items-center gap-1.5">
+                  <span>✨</span> 基本的な性格・本質
+                </h4>
+                <p class="text-xs sm:text-sm text-amber-900/85 leading-relaxed">${data.baseDesc}</p>
+              </div>
+
+              <div class="bg-sky-50/50 rounded-2xl p-4 border border-sky-100">
+                <h4 class="font-black text-sky-950 text-sm mb-2 flex items-center gap-1.5">
+                  <span>💼</span> 仕事・才能の活かし方
+                </h4>
+                <p class="text-xs sm:text-sm text-sky-950/85 leading-relaxed">${data.work}</p>
+              </div>
+
+              <div class="bg-pink-50/50 rounded-2xl p-4 border border-pink-100">
+                <h4 class="font-black text-pink-950 text-sm mb-2 flex items-center gap-1.5">
+                  <span>💖</span> 恋愛・人間関係の傾向
+                </h4>
+                <p class="text-xs sm:text-sm text-pink-950/85 leading-relaxed">${data.love}</p>
+              </div>
+            </div>
+
+            <!-- 相性の良い動物 -->
+            <div class="mt-6 pt-5 border-t border-amber-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div class="text-center sm:text-left">
+                <span class="text-xs font-bold text-amber-700 block">🤝 特に気が合う・相性の良い動物</span>
+                <span class="text-xs text-amber-800/70">価値観が似ていたり、お互いの長所を引き出し合えるパートナー</span>
+              </div>
+              <div class="flex flex-wrap justify-center gap-2">
+                ${data.bestMatch.map(m => `
+                  <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-50 border border-amber-200">
+                    ${getAnimalSVG(m, '#F59E0B', 'w-7 h-7')}
+                    <span class="text-xs font-black text-amber-950">${m}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            ${fourPillarsHTML}
+            ${dailyHTML}
+            ${shareSectionHTML}
+            ${nextPagesCTA}
+          </div>
+        </div>
+      `;
+    }
+
+    function runSingleFortune() {
+      const y = parseInt(document.getElementById('birth-year').value, 10);
+      const m = parseInt(document.getElementById('birth-month').value, 10);
+      const d = parseInt(document.getElementById('birth-day').value, 10);
+      const errEl = document.getElementById('single-error-msg');
+
+      if (!y || !m || !d) {
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+
+      const data = getFortuneData(y, m, d);
+      currentDiagnosedState = { y, m, d, data };
+
+      const container = document.getElementById('single-result-container');
+      container.innerHTML = renderCharacterCardHTML(data, `${y}年${m}月${d}日`, true);
+
+      // Canvasにシェアカードを描画
+      setTimeout(() => renderShareCanvas(data, `${y}年${m}月${d}日`), 50);
+    }
+
+    /**
+     * ============================================================================
+     * 6.5 SNSシェア用Canvas画像生成＆コピー・ポスト機能
+     * ============================================================================
+     */
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'bg-amber-950 text-white text-xs sm:text-sm font-black px-5 py-3 rounded-full shadow-xl animate-toast';
+      toast.textContent = message;
+      container.innerHTML = '';
+      container.appendChild(toast);
+    }
+
+    function renderShareCanvas(data, dateLabel) {
+      const canvas = document.getElementById('share-card-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+      const daily = getDailyFortune(data);
+
+      // 背景グラデーション
+      ctx.fillStyle = '#FFFBF2';
+      ctx.fillRect(0, 0, W, H);
+
+      // 外枠フレーム
+      ctx.strokeStyle = data.colorTheme.hex;
+      ctx.lineWidth = 10;
+      ctx.strokeRect(14, 14, W - 28, H - 28);
+
+      // ヘッダー帯
+      ctx.fillStyle = data.colorTheme.light;
+      ctx.fillRect(19, 19, W - 38, 66);
+
+      ctx.fillStyle = '#4A3F35';
+      ctx.font = 'bold 22px "Zen Maru Gothic", sans-serif';
+      ctx.fillText(`🐾 どうぶつ占い 60分類診断  |  No.${data.id}（${data.kanshi}）`, 38, 60);
+
+      ctx.fillStyle = data.colorTheme.text;
+      ctx.font = 'bold 18px "Zen Maru Gothic", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${data.group} / カラー：${data.color}`, W - 38, 60);
+      ctx.textAlign = 'left';
+
+      // タイトル＆キャッチコピー（右側テキストエリア）
+      ctx.fillStyle = '#451A03';
+      ctx.font = '900 36px "Zen Maru Gothic", sans-serif';
+      ctx.fillText(data.name, 260, 148);
+
+      ctx.fillStyle = data.colorTheme.text;
+      ctx.font = 'bold 18px "Zen Maru Gothic", sans-serif';
+      const taglineText = data.tagline.length > 26 ? data.tagline.slice(0, 26) + '…' : data.tagline;
+      ctx.fillText(`「${taglineText}」`, 260, 184);
+
+      // 4つの隠れキャラミニボックス
+      if (data.pillars) {
+        const boxLabels = [
+          { label: '本質', animal: data.pillars.essence.animal },
+          { label: '表面', animal: data.pillars.surface.animal },
+          { label: '意思', animal: data.pillars.will.animal },
+          { label: '希望', animal: data.pillars.hope.animal }
+        ];
+        boxLabels.forEach((b, idx) => {
+          const bx = 260 + idx * 126;
+          const by = 212;
+          ctx.fillStyle = '#FFFFFF';
+          ctx.strokeStyle = '#FDE68A';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(bx, by, 116, 74, 12);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#B45309';
+          ctx.font = 'bold 13px "Zen Maru Gothic", sans-serif';
+          ctx.fillText(b.label, bx + 12, by + 24);
+
+          ctx.fillStyle = '#451A03';
+          ctx.font = '900 18px "Zen Maru Gothic", sans-serif';
+          ctx.fillText(b.animal, bx + 12, by + 54);
+        });
+      }
+
+      // 今日のラッキーカラーフッターバー
+      ctx.fillStyle = '#FEF3C7';
+      ctx.beginPath();
+      ctx.roundRect(260, 306, 494, 96, 16);
+      ctx.fill();
+
+      ctx.fillStyle = daily.luckyColorTheme.hex;
+      ctx.beginPath();
+      ctx.arc(305, 354, 24, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#78350F';
+      ctx.font = 'bold 15px "Zen Maru Gothic", sans-serif';
+      ctx.fillText(`${daily.dateStr}のラッキーカラー：${daily.luckyColorName}（総合運 ${'★'.repeat(daily.stars)}）`, 345, 344);
+
+      ctx.fillStyle = '#451A03';
+      ctx.font = 'bold 15px "Zen Maru Gothic", sans-serif';
+      ctx.fillText(`🎁 ラッキーアイテム：${daily.luckyItem}`, 345, 374);
+
+      // 左側に自作SVGイラストをImage変換して描画
+      const svgMarkup = getAnimalSVG(data.animal, data.colorTheme.hex, 'w-48 h-48')
+        .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="210" height="210" ');
+      const svgBlob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 36, 125, 205, 205);
+        ctx.fillStyle = '#78350F';
+        ctx.font = 'bold 16px "Zen Maru Gothic", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`基本動物：${data.animal}`, 138, 362);
+        ctx.font = '14px "Zen Maru Gothic", sans-serif';
+        ctx.fillText(`${dateLabel} 生まれ`, 138, 388);
+        ctx.textAlign = 'left';
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    }
+
+    function downloadShareImage() {
+      const canvas = document.getElementById('share-card-canvas');
+      if (!canvas || !currentDiagnosedState) return;
+      const link = document.createElement('a');
+      link.download = `animal_fortune_${currentDiagnosedState.data.id}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('📥 診断結果カードをPNG保存しました！');
+    }
+
+    function buildShareMessage() {
+      if (!currentDiagnosedState) return '';
+      const { data } = currentDiagnosedState;
+      const daily = getDailyFortune(data);
+      const p = data.pillars;
+      return `【どうぶつ占い60分類】\n私は No.${data.id}「${data.name}」（${data.color} / ${data.group}）でした！\n🎭 隠れキャラ：本質=${p.essence.animal} / 表面=${p.surface.animal} / 意思=${p.will.animal} / 希望=${p.hope.animal}\n🎨 今日のラッキーカラー：${daily.luckyColorName}\n#どうぶつ占い #60分類診断`;
+    }
+
+    function copyShareText() {
+      const text = buildShareMessage();
+      if (!text) return;
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showToast('📋 シェア用テキストをクリップボードにコピーしました！');
+    }
+
+    function shareToX() {
+      const text = buildShareMessage();
+      if (!text) return;
+      const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    /**
+     * ============================================================================
+     * 6.8 専用詳細ページ（仕事運ページ・恋愛運ページ）＆相性ページ遷移
+     * ============================================================================
+     */
+    const WORK_DETAIL_BY_ANIMAL = {
+      '狼': { scores: [95, 72, 88, 92, 78], jobs: ['クリエイター・デザイナー', 'ITエンジニア・研究者', '独立起業・フリーランス'], env: '干渉されず自分のペースと裁量で集中できる環境', action: '1日30分、誰にも邪魔されない企画・思考タイムを作る' },
+      '猿': { scores: [85, 92, 95, 80, 88], jobs: ['企画・マーケティング', '営業・プレゼンター', 'イベント・エンタメ業界'], env: '変化とスピード感があり、成果がすぐ評価される職場', action: 'アイデアを3つ書き出して一番面白い案を即実行する' },
+      '虎': { scores: [88, 94, 86, 90, 92], jobs: ['マネージャー・管理職', '店舗・チームリーダー', '教育・人材育成トレーナー'], env: '任される裁量が大きく、仲間と目標を追える組織', action: '後輩や同僚の良いところを1つ言葉にして褒める' },
+      '子守熊': { scores: [84, 86, 92, 88, 90], jobs: ['経営企画・コンサルタント', 'サービス・ホスピタリティ業', '財務・プランナー'], env: '長期的なキャリアが見通せて、穏やかに働ける職場', action: '今月の目標を小さな3ステップに分解して手帳に書く' },
+      'チーター': { scores: [92, 84, 90, 76, 86], jobs: ['新規事業開発・スタートアップ', '広報・PR・バイヤー', 'スポーツ・インストラクター'], env: '自由度が高く、短期決戦で結果を出せるスピード現場', action: '後回しにしていた連絡やタスクを5分以内に片付ける' },
+      'ライオン': { scores: [90, 96, 88, 92, 90], jobs: ['経営者・プロジェクト統括', 'プロデューサー・ディレクター', '士業・専門コンサル'], env: 'トップの信頼を得て、大きな権限を任されるステージ', action: 'チーム全体の理想のゴールを堂々と宣言してみる' },
+      'ゾウ': { scores: [86, 85, 82, 98, 94], jobs: ['専門技術職・職人・医師', 'インフラ・建築・メーカー', 'プロジェクトマネージャー'], env: '腰を据えて一つの専門性を極められるプロ集団', action: '基礎資料やマニュアルを丁寧に読み直して土台を固める' },
+      'ペガサス': { scores: [98, 80, 92, 74, 84], jobs: ['アーティスト・作家・映像制作', '商品企画・トレンド分析', '自由度の高いフリーランス'], env: 'ルールに縛られず感性とひらめきを活かせる職場', action: 'カフェや散歩など場所を変えて新しい刺激を取り入れる' },
+      '黒ひょう': { scores: [92, 88, 90, 84, 86], jobs: ['ファッション・美容・デザイン', 'メディア・編集・SNS運用', 'ブランドマネージャー'], env: 'センスや美意識が尊重され、洗練された仲間がいる環境', action: '最新のトレンド記事や展示会をチェックして感性を磨く' },
+      'ひつじ': { scores: [80, 92, 86, 90, 96], jobs: ['人事・総務・秘書・バックオフィス', '医療・福祉・カウンセラー', 'カスタマーサクセス'], env: 'チームワークが良く、お互いを支え合う温かい職場', action: '周囲の人が助かるちょっとした気配り・フォローをする' },
+      'こじか': { scores: [82, 88, 84, 86, 94], jobs: ['保育・教育・スクール講師', '接客・ブライダル・受付', 'チームサポート・広報'], env: '人間関係が穏やかで、安心して相談できる風通しの良い職場', action: '感謝のメモやメッセージを添えて仕事を引き継ぐ' },
+      'たぬき': { scores: [80, 96, 90, 88, 94], jobs: ['法人営業・渉外・マネジメント', '伝統企業・公務員・金融', 'コミュニティ運営・接客'], env: '礼儀や信頼関係が大切にされ、人脈が広がる組織', action: '久しぶりの取引先や知人に近況伺いの連絡を入れる' }
+    };
+
+    const LOVE_DETAIL_BY_ANIMAL = {
+      '狼': { style: '一途で誠実なマイペース恋愛。ベタベタしすぎず、精神的に自立した大人の関係を築きます。', partner: 'あなたのこだわりや一人の時間を尊重してくれる、穏やかで理解力のある人', dates: ['静かな美術館・プラネタリウム', '隠れ家カフェで読書デート', '夜景の綺麗なドライブ'], ranks: ['猿', '子守熊', 'ペガサス'] },
+      '猿': { style: '友達のように笑い合える明るい恋愛！サプライズや楽しいイベントで相手を喜ばせる名人です。', partner: '一緒にノリ良く楽しんでくれて、あなたの機転を素直に褒めてくれる人', dates: ['テーマパーク・水族館', '話題のグルメ食べ歩き', 'アクティブな体験ワークショップ'], ranks: ['狼', '虎', '黒ひょう'] },
+      '虎': { style: '好きになったら真っ直ぐ一途！頼りがいがあり、大切な人を全力で守り抜く情熱派です。', partner: '裏表がなく素直に甘えてくれる人、または対等に本音で語り合える人', dates: ['少し贅沢なディナー', '自然豊かなリゾート・温泉旅行', 'スポーツ観戦・ライブ'], ranks: ['猿', '子守熊', 'ひつじ'] },
+      '子守熊': { style: '心地よさと安心感を大切にするロマンチスト。二人きりの時間になると甘え上手な一面も。', partner: '穏やかで包容力があり、美味しいものや楽しい時間を一緒に味わえる人', dates: ['おうちでまったり映画鑑賞', '絶景温泉とご当地グルメ旅', '緑豊かな公園ピクニック'], ranks: ['狼', '虎', 'ゾウ'] },
+      'チーター': { style: '直感で恋に落ちる情熱のスピードスター！駆け引きなしの爽やかで前向きな恋をします。', partner: 'フットワークが軽く、あなたの夢やチャレンジを一緒に応援してくれる人', dates: ['ドライブ・日帰り小旅行', 'オープンテラスのカフェ', '夜景スポット巡り'], ranks: ['ライオン', 'たぬき', 'こじか'] },
+      'ライオン': { style: 'ドラマチックで誇り高い王者の恋愛。相手を特別扱いし、全力でエスコートする頼もしさがあります。', partner: 'あなたを心から信頼して立ててくれる、素直で温かいハートの持ち主', dates: ['ホテルラウンジや記念日ディナー', 'イルミネーション・クルーズ', '非日常を味わえる旅行'], ranks: ['チーター', 'ペガサス', 'こじか'] },
+      'ゾウ': { style: '不器用ながらも誰よりも深い愛情を注ぐ誠実派。一度結ばれると長く安定した愛を育みます。', partner: '聞き上手であなたの努力を静かに見守り、安心感を与えてくれる人', dates: ['老舗のレストラン・料亭', '歴史ある街並みの散策', '落ち着いたバーや珈琲店'], ranks: ['ペガサス', '子守熊', 'たぬき'] },
+      'ペガサス': { style: '感性とフィーリングがすべての自由な恋愛！束縛されず、風のように心地よい距離感を好みます。', partner: 'あなたの独特な感性を面白がり、自由な翼を伸ばしてくれる懐の深い人', dates: ['アートイベント・音楽フェス', '行き先を決めない気ままな旅', '星空観賞・ナイトミュージアム'], ranks: ['ライオン', 'ゾウ', '狼'] },
+      '黒ひょう': { style: 'スマートでロマンチックな恋に憧れる情熱家。対等な立場で刺激し合い、一緒に成長できる関係が理想。', partner: 'センスが良く、あなたのプライドや優しさをしっかり受け止めてくれる人', dates: ['おしゃれなセレクトショップ巡り', '話題の新スポット・ルーフトップ', '映画館＆カフェ語らいデート'], ranks: ['ひつじ', 'たぬき', '猿'] },
+      'ひつじ': { style: 'いつもそばにいたい甘えん坊＆尽くし型。相手の気持ちを細やかに察して温かい愛を育みます。', partner: '連絡がマメで誠実、あなたの優しさに「ありがとう」と応えてくれる人', dates: ['おそろいの雑貨探しショッピング', 'カフェ巡り・スイーツビュッフェ', 'のんびり水族館・動物園'], ranks: ['黒ひょう', 'こじか', '虎'] },
+      'こじか': { style: '純粋で嘘のないピュアな恋愛観。心を開いた相手には無邪気な笑顔でとことん懐きます。', partner: '裏表がなく誠実で、愛情を分かりやすく言葉や行動で示してくれる人', dates: ['植物園・フラワーパーク', '手作り体験・陶芸教室', '落ち着いた雰囲気のビストロ'], ranks: ['ひつじ', 'チーター', 'ライオン'] },
+      'たぬき': { style: '相手に寄り添い尽くす温かい家庭的タイプ。自然体でいられる安心感たっぷりの恋を築きます。', partner: '礼儀正しく思いやりがあり、一緒にいてホッと笑顔になれる人', dates: ['温泉街の食べ歩きデート', '季節の花見・紅葉狩り', 'おうち手料理ディナー'], ranks: ['黒ひょう', 'チーター', 'ゾウ'] }
+    };
+
+    function openDetailPage(pageType) {
+      if (!currentDiagnosedState) return;
+      const { y, m, d, data } = currentDiagnosedState;
+
+      // 全ビューを一旦非表示
+      ['fortune', 'compat', 'encyclopedia', 'work', 'love'].forEach(v => {
+        document.getElementById(`view-${v}`).classList.add('hidden');
+      });
+
+      if (pageType === 'work') {
+        const w = WORK_DETAIL_BY_ANIMAL[data.animal];
+        const labels = ['独創・企画力', '統率・リーダー力', '行動・スピード', '専門・継続力', '協調・サポート力'];
+        const workView = document.getElementById('view-work');
+        workView.innerHTML = `
+          <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-md border-2 border-sky-200 animate-pop-in space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-sky-100">
+              <button onclick="switchTab('fortune')" class="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs sm:text-sm font-black transition-colors cursor-pointer">
+                ← 基本の診断結果へ戻る
+              </button>
+              <span class="text-xs font-bold text-sky-700">${y}年${m}月${d}日生まれ / No.${data.id}</span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center gap-5 bg-sky-50/70 rounded-2xl p-5 border border-sky-100">
+              ${getAnimalSVG(data.animal, data.colorTheme.hex, 'w-24 h-24')}
+              <div class="text-center sm:text-left">
+                <span class="inline-block px-3 py-0.5 rounded-full bg-sky-500 text-white text-xs font-black mb-1">💼 仕事運・適職詳細鑑定</span>
+                <h2 class="text-xl sm:text-2xl font-black text-amber-950">${data.name} のキャリア診断</h2>
+                <p class="text-xs sm:text-sm text-sky-950/85 mt-1 leading-relaxed">${data.work}</p>
+              </div>
+            </div>
+
+            <!-- 5項目のビジネス能力バー -->
+            <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 space-y-3">
+              <h3 class="font-black text-slate-900 text-sm sm:text-base">📊 ビジネス能力ポテンシャル</h3>
+              ${labels.map((lbl, idx) => `
+                <div>
+                  <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                    <span>${lbl}</span>
+                    <span class="text-sky-600 font-black">${w.scores[idx]}点</span>
+                  </div>
+                  <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-sky-400 to-blue-600 rounded-full" style="width: ${w.scores[idx]}%;"></div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="bg-sky-50/60 rounded-2xl p-4 border border-sky-100">
+                <h4 class="font-black text-sky-950 text-sm mb-2">🏆 天職・適職ベスト3</h4>
+                <ul class="space-y-1.5 text-xs sm:text-sm font-bold text-sky-900">
+                  ${w.jobs.map((j, i) => `<li>${['🥇','🥈','🥉'][i]} ${j}</li>`).join('')}
+                </ul>
+              </div>
+              <div class="bg-amber-50/60 rounded-2xl p-4 border border-amber-100">
+                <h4 class="font-black text-amber-950 text-sm mb-2">🏢 最も輝く職場環境</h4>
+                <p class="text-xs sm:text-sm text-amber-900/90 leading-relaxed">${w.env}</p>
+              </div>
+              <div class="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-100">
+                <h4 class="font-black text-emerald-950 text-sm mb-2">🚀 仕事運アップの開運行動</h4>
+                <p class="text-xs sm:text-sm text-emerald-900/90 leading-relaxed">${w.action}</p>
+              </div>
+            </div>
+
+            <!-- 他のページへの相互導線 -->
+            <div class="pt-4 border-t border-sky-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button onclick="openDetailPage('love')" class="py-3.5 px-5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-black text-sm shadow-sm cursor-pointer flex items-center justify-between">
+                <span>💖 続けて「恋愛運」を見る</span><span>→</span>
+              </button>
+              <button onclick="goToCompatibilityWithUser()" class="py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-sm cursor-pointer flex items-center justify-between">
+                <span>💕 続けて「相性占い」へ進む</span><span>→</span>
+              </button>
+            </div>
+          </div>
+        `;
+        workView.classList.remove('hidden');
+      } else if (pageType === 'love') {
+        const lv = LOVE_DETAIL_BY_ANIMAL[data.animal];
+        const loveView = document.getElementById('view-love');
+        loveView.innerHTML = `
+          <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-md border-2 border-pink-200 animate-pop-in space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-pink-100">
+              <button onclick="switchTab('fortune')" class="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs sm:text-sm font-black transition-colors cursor-pointer">
+                ← 基本の診断結果へ戻る
+              </button>
+              <span class="text-xs font-bold text-pink-700">${y}年${m}月${d}日生まれ / No.${data.id}</span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center gap-5 bg-pink-50/70 rounded-2xl p-5 border border-pink-100">
+              ${getAnimalSVG(data.animal, data.colorTheme.hex, 'w-24 h-24')}
+              <div class="text-center sm:text-left">
+                <span class="inline-block px-3 py-0.5 rounded-full bg-pink-500 text-white text-xs font-black mb-1">💖 恋愛運・運命の相手詳細鑑定</span>
+                <h2 class="text-xl sm:text-2xl font-black text-amber-950">${data.name} の恋愛スタイル</h2>
+                <p class="text-xs sm:text-sm text-pink-950/85 mt-1 leading-relaxed">${lv.style}</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-rose-50/60 rounded-2xl p-5 border border-rose-100">
+                <h4 class="font-black text-rose-950 text-sm mb-2">💘 理想のパートナー像</h4>
+                <p class="text-xs sm:text-sm text-rose-950/90 leading-relaxed">${lv.partner}</p>
+              </div>
+              <div class="bg-amber-50/60 rounded-2xl p-5 border border-amber-100">
+                <h4 class="font-black text-amber-950 text-sm mb-2">🎡 おすすめの開運デートスポット</h4>
+                <ul class="space-y-1 text-xs sm:text-sm font-bold text-amber-900">
+                  ${lv.dates.map(dt => `<li>✨ ${dt}</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+
+            <div class="bg-pink-50/50 rounded-2xl p-5 border border-pink-100">
+              <h4 class="font-black text-pink-950 text-sm mb-3">💞 運命の相性ベスト3の動物</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                ${lv.ranks.map((anm, i) => `
+                  <div class="bg-white rounded-2xl p-3 border border-pink-200 flex items-center gap-3">
+                    ${getAnimalSVG(anm, '#EC4899', 'w-12 h-12')}
+                    <div>
+                      <span class="text-[11px] font-black text-pink-500">第${i + 1}位</span>
+                      <div class="font-black text-amber-950 text-sm">${anm}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- 他のページへの相互導線 -->
+            <div class="pt-4 border-t border-pink-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button onclick="openDetailPage('work')" class="py-3.5 px-5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black text-sm shadow-sm cursor-pointer flex items-center justify-between">
+                <span>💼 続けて「仕事運」を見る</span><span>→</span>
+              </button>
+              <button onclick="goToCompatibilityWithUser()" class="py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-sm cursor-pointer flex items-center justify-between">
+                <span>💕 気になるお相手と「相性占い」へ</span><span>→</span>
+              </button>
+            </div>
+          </div>
+        `;
+        loveView.classList.remove('hidden');
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goToCompatibilityWithUser() {
+      switchTab('compat');
+      if (currentDiagnosedState) {
+        const { y, m, d } = currentDiagnosedState;
+        const ya = document.getElementById('compat-year-a');
+        const ma = document.getElementById('compat-month-a');
+        const da = document.getElementById('compat-day-a');
+        ya.value = y;
+        ma.value = m;
+        ma.dispatchEvent(new Event('change'));
+        da.value = d;
+        showToast('💕 あなたの生年月日を1人目に自動セットしました！');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /**
+     * ============================================================================
+     * 7. 相性診断ロジック＆レンダリング
+     * ============================================================================
+     */
+    function evaluateCompatibility(personA, personB) {
+      let score = 75;
+      let title = '';
+      let summary = '';
+      let advice = '';
+
+      const sameAnimal = personA.animal === personB.animal;
+      const sameGroup = personA.group === personB.group;
+      const isBestAtoB = personA.bestMatch.includes(personB.animal);
+      const isBestBtoA = personB.bestMatch.includes(personA.animal);
+
+      if (sameAnimal && personA.id === personB.id) {
+        score = 92;
+        title = 'まるで鏡写し！言葉がいらないソウルメイト相性';
+        summary = `まったく同じ「${personA.name}」同士！思考回路や行動パターンが驚くほど似ているため、初対面でも昔からの親友のように意気投合できます。`;
+        advice = '似ているからこそ、自分の弱点も相手に見えやすい関係。お互いのプライドを尊重し、褒め合うことで最強のタッグになります。';
+      } else if (isBestAtoB || isBestBtoA) {
+        score = 96;
+        title = 'お互いの魅力を引き出し合う！最高峰のベストパートナー';
+        summary = `「${personA.animal}」と「${personB.animal}」は、どうぶつ占いの中でも特に波長が合い、一緒にいることで運気やモチベーションが高まる好相性です！`;
+        advice = '自然体で過ごせる心地よい関係です。感謝の気持ちをこまめに言葉にして伝えると、さらに絆が深まります。';
+      } else if (sameGroup) {
+        score = 88;
+        title = `同じ「${personA.group}」同士！価値観が通じ合う安心の相性`;
+        summary = `2人とも「${personA.group}」に属しているため、物事の優先順位やテンポが似ていてストレスの少ない関係です。説明しなくても「わかる！」と共感できる場面が多いはず。`;
+        advice = '居心地が良すぎてマンネリ化しないよう、時には新しい場所へ出かけたり共通の目標を持つとさらに輝きます。';
+      } else {
+        // 異なるグループ同士（地球・太陽・満月の三すくみダイナミクス）
+        const pair = [personA.group, personB.group].sort().join('×');
+        if (pair === '地球グループ×太陽グループ') {
+          score = 84;
+          title = '行動力と堅実さが噛み合う！刺激と成長の相性';
+          summary = '直感とパワーで突き進む「太陽グループ」と、現実を見据えて計画的に動く「地球グループ」の組み合わせ。自分にない視点を補い合えます。';
+          advice = '太陽側は「結論を急ぎすぎないこと」、地球側は「相手の勢いをまず肯定すること」を意識すると抜群のコンビネーションになります。';
+        } else if (pair === '太陽グループ×満月グループ') {
+          score = 86;
+          title = '明るさと優しさが溶け合う！華やかなムードメーカー相性';
+          summary = 'ポジティブに引っ張る「太陽グループ」と、細やかな気配りで支える「満月グループ」の組み合わせ。お互いの存在が心の支えになります。';
+          advice = '太陽側は「相手の気遣いに感謝を伝えること」、満月側は「遠慮せず自分の本音も話すこと」で、より深く信頼し合えます。';
+        } else {
+          // 地球グループ×満月グループ
+          score = 82;
+          title = 'マイペースと人情味が響き合う！じっくり深まる信頼相性';
+          summary = '自分の世界を大切にする「地球グループ」と、人との絆を大切にする「満月グループ」。最初は距離感の違いに戸惑うこともありますが、一度打ち解けると固い絆で結ばれます。';
+          advice = '地球側は「感情や愛情を言葉で表現すること」、満月側は「相手の一人の時間も尊重すること」が円満の秘訣です。';
+        }
+      }
+
+      return { score, title, summary, advice };
+    }
+
+    function runCompatibility() {
+      const ya = parseInt(document.getElementById('compat-year-a').value, 10);
+      const ma = parseInt(document.getElementById('compat-month-a').value, 10);
+      const da = parseInt(document.getElementById('compat-day-a').value, 10);
+
+      const yb = parseInt(document.getElementById('compat-year-b').value, 10);
+      const mb = parseInt(document.getElementById('compat-month-b').value, 10);
+      const db = parseInt(document.getElementById('compat-day-b').value, 10);
+      const errEl = document.getElementById('compat-error-msg');
+
+      if (!ya || !ma || !da || !yb || !mb || !db) {
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+
+      const personA = getFortuneData(ya, ma, da);
+      const personB = getFortuneData(yb, mb, db);
+      const result = evaluateCompatibility(personA, personB);
+
+      const container = document.getElementById('compat-result-container');
+      container.innerHTML = `
+        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-md border-2 border-pink-200 animate-pop-in space-y-6">
+          <!-- スコアヘッダー -->
+          <div class="text-center space-y-2">
+            <span class="inline-block px-3.5 py-1 rounded-full bg-pink-100 text-pink-700 text-xs font-black">
+              相性シンクロ度
+            </span>
+            <div class="flex items-baseline justify-center gap-1">
+              <span class="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-orange-500">${result.score}</span>
+              <span class="text-xl font-black text-pink-500">%</span>
+            </div>
+            <h3 class="text-lg sm:text-2xl font-black text-amber-950">${result.title}</h3>
+          </div>
+
+          <!-- 2人のキャラクター比較 -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+            <div class="rounded-2xl p-4 border text-center" style="background-color: ${personA.colorTheme.light}; border-color: ${personA.colorTheme.border};">
+              <span class="inline-block px-2.5 py-0.5 rounded-full bg-orange-500 text-white text-xs font-black mb-1">あなた（${ya}/${ma}/${da}）</span>
+              ${getAnimalSVG(personA.animal, personA.colorTheme.hex, 'w-28 h-28')}
+              <div class="font-black text-amber-950 text-base mt-1">${personA.name}</div>
+              <div class="text-xs font-bold text-amber-800/80 mt-0.5">${personA.group} / ${personA.color}</div>
+            </div>
+
+            <div class="rounded-2xl p-4 border text-center" style="background-color: ${personB.colorTheme.light}; border-color: ${personB.colorTheme.border};">
+              <span class="inline-block px-2.5 py-0.5 rounded-full bg-pink-500 text-white text-xs font-black mb-1">お相手（${yb}/${mb}/${db}）</span>
+              ${getAnimalSVG(personB.animal, personB.colorTheme.hex, 'w-28 h-28')}
+              <div class="font-black text-amber-950 text-base mt-1">${personB.name}</div>
+              <div class="text-xs font-bold text-amber-800/80 mt-0.5">${personB.group} / ${personB.color}</div>
+            </div>
+          </div>
+
+          <!-- 相性解説＆アドバイス -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-amber-50/70 rounded-2xl p-4 border border-amber-100">
+              <h4 class="font-black text-amber-950 text-sm mb-1.5">🔮 ふたりの関係性</h4>
+              <p class="text-xs sm:text-sm text-amber-900/90 leading-relaxed">${result.summary}</p>
+            </div>
+            <div class="bg-pink-50/70 rounded-2xl p-4 border border-pink-100">
+              <h4 class="font-black text-pink-950 text-sm mb-1.5">💡 もっと仲良くなる秘訣</h4>
+              <p class="text-xs sm:text-sm text-pink-950/90 leading-relaxed">${result.advice}</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /**
+     * ============================================================================
+     * 8. 全60分類図鑑レンダリング＆モーダル表示
+     * ============================================================================
+     */
+    let currentGroupFilter = 'ALL';
+    let currentAnimalFilter = 'ALL';
+
+    function initEncyclopediaFilters() {
+      const animals = ['ALL', '狼', '猿', '虎', '子守熊', 'チーター', 'ライオン', 'ゾウ', 'ペガサス', '黒ひょう', 'ひつじ', 'こじか', 'たぬき'];
+      const container = document.getElementById('animal-filters');
+      container.innerHTML = animals.map(a => `
+        <button onclick="filterEncyclopedia(currentGroupFilter, '${a}')" data-animal="${a}" class="animal-filter-btn flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${a === 'ALL' ? 'bg-orange-500 text-white border-orange-500' : 'bg-amber-50/60 text-amber-900 border-amber-200 hover:bg-amber-100'}">
+          ${a === 'ALL' ? '🐾 全動物' : a}
+        </button>
+      `).join('');
+    }
+
+    function filterEncyclopedia(group, animal) {
+      currentGroupFilter = group;
+      currentAnimalFilter = animal;
+
+      // ボタンのアクティブ表示更新
+      document.querySelectorAll('.group-filter-btn').forEach(btn => {
+        const isTarget = btn.dataset.group === group;
+        if (isTarget) {
+          btn.classList.add('ring-2', 'ring-offset-1', 'ring-amber-500');
+        } else {
+          btn.classList.remove('ring-2', 'ring-offset-1', 'ring-amber-500');
+        }
+      });
+
+      document.querySelectorAll('.animal-filter-btn').forEach(btn => {
+        const isTarget = btn.dataset.animal === animal;
+        if (isTarget) {
+          btn.className = 'animal-filter-btn flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer bg-orange-500 text-white border-orange-500 shadow-xs';
+        } else {
+          btn.className = 'animal-filter-btn flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer bg-amber-50/60 text-amber-900 border-amber-200 hover:bg-amber-100';
+        }
+      });
+
+      const grid = document.getElementById('encyclopedia-grid');
+      const filtered = SIXTY_CLASSIFICATIONS.filter(item => {
+        const itemGroup = ANIMAL_TRAITS[item.animal].group;
+        const matchGroup = group === 'ALL' || itemGroup === group;
+        const matchAnimal = animal === 'ALL' || item.animal === animal;
+        return matchGroup && matchAnimal;
+      });
+
+      grid.innerHTML = filtered.map(item => {
+        const theme = COLOR_THEMES[item.color];
+        const grp = ANIMAL_TRAITS[item.animal].group;
+        return `
+          <div onclick="openCharacterModal(${item.id})" class="group bg-white hover:bg-amber-50/40 rounded-2xl p-4 border-2 transition-all cursor-pointer shadow-xs hover:shadow-md flex items-center gap-3.5" style="border-color: ${theme.border};">
+            <div class="flex-shrink-0 transform group-hover:scale-105 transition-transform">
+              ${getAnimalSVG(item.animal, theme.hex, 'w-16 h-16')}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 mb-1">
+                <span class="text-[11px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-900">No.${item.id}</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full border ${theme.badge}">${item.color}</span>
+              </div>
+              <h4 class="font-black text-amber-950 text-sm truncate">${item.name}</h4>
+              <p class="text-[11px] text-amber-800/75 line-clamp-1 mt-0.5">${item.tagline}</p>
+              <span class="inline-block text-[10px] font-bold text-amber-700/70 mt-1">${grp}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openCharacterModal(id) {
+      const item = SIXTY_CLASSIFICATIONS[id - 1];
+      const animalInfo = ANIMAL_TRAITS[item.animal];
+      const colorTheme = COLOR_THEMES[item.color];
+      const fullData = {
+        ...item,
+        group: animalInfo.group,
+        baseDesc: animalInfo.baseDesc,
+        work: animalInfo.work,
+        love: animalInfo.love,
+        bestMatch: animalInfo.bestMatch,
+        colorTheme
+      };
+
+      const modal = document.getElementById('detail-modal');
+      const content = document.getElementById('modal-content');
+      content.innerHTML = renderCharacterCardHTML(fullData);
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal(event) {
+      if (event && event.target !== event.currentTarget) return;
+      const modal = document.getElementById('detail-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    /**
+     * ============================================================================
+     * 9. タブ切り替え制御
+     * ============================================================================
+     */
+    function switchTab(tabName) {
+      // 詳細サブページも必ず非表示にする
+      ['work', 'love'].forEach(sub => {
+        const subEl = document.getElementById(`view-${sub}`);
+        if (subEl) subEl.classList.add('hidden');
+      });
+
+      ['fortune', 'compat', 'encyclopedia'].forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tabName) {
+          view.classList.remove('hidden');
+          btn.className = 'tab-btn flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition-all bg-white text-amber-900 shadow-sm cursor-pointer';
+        } else {
+          view.classList.add('hidden');
+          btn.className = 'tab-btn flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-bold transition-all text-amber-800/70 hover:text-amber-950 cursor-pointer';
+        }
+      });
+    }
+
+    // 初期起動処理
+    window.addEventListener('DOMContentLoaded', () => {
+      // 初期状態は未選択（プレースホルダー）で初期化
+      populateDateSelectors('birth-year', 'birth-month', 'birth-day');
+      populateDateSelectors('compat-year-a', 'compat-month-a', 'compat-day-a');
+      populateDateSelectors('compat-year-b', 'compat-month-b', 'compat-day-b');
+
+      initEncyclopediaFilters();
+      filterEncyclopedia('ALL', 'ALL');
+    });
+  </script>
+</body>
+</html>
